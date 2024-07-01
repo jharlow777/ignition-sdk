@@ -53,22 +53,22 @@ public class RadDesignerHook extends AbstractDesignerModuleHook {
         registry = pdi.getDesignerComponentRegistry();
         delegateRegistry = pdi.getComponentDesignDelegateRegistry();
 
-        Project project = this.context.getProject();
-        String projectName = project.getName();
-        logger.info("Project Name: " + projectName);
+        // Project project = this.context.getProject();
+        // String projectName = project.getName();
+        // logger.info("RadDesignerHook()::Project Name: " + projectName);
 
-        ResourcePath trackAndTracePath = new ResourcePath(
-            new ResourceType("com.inductiveautomation.perspective", "views"), 
-            "App/TrackAndTrace"
-        );
+        // ResourcePath trackAndTracePath = new ResourcePath(
+        //     new ResourceType("com.inductiveautomation.perspective", "views"), 
+        //     "App/TrackAndTrace"
+        // );
 
-        List<ProjectResource> trackAndTraceResources = project
-            .browse(trackAndTracePath)
-            .orElseGet(Collections::emptyList);
-        logger.debug("TRACK AND TRACE RESOURCES: " + trackAndTraceResources.size());
-        trackAndTraceResources.forEach(res -> {
-            logger.debug("RES: " + res.getResourceName());
-        });
+        // List<ProjectResource> trackAndTraceResources = project
+        //     .browse(trackAndTracePath)
+        //     .orElseGet(Collections::emptyList);
+        // logger.debug("RadDesignerHook()::TRACK AND TRACE RESOURCES: " + trackAndTraceResources.size());
+        // trackAndTraceResources.forEach(res -> {
+        //     logger.debug("RadDesignerHook()::RES: " + res.getResourceName());
+        // });
 
         // register components to get them on the palette
         registry.registerComponent(Image.DESCRIPTOR);

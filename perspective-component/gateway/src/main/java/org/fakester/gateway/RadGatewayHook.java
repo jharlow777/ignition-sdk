@@ -1,8 +1,14 @@
 package org.fakester.gateway;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
 import com.inductiveautomation.ignition.common.project.Project;
@@ -22,7 +28,6 @@ import org.fakester.common.component.display.Messenger;
 import org.fakester.common.component.display.TagCounter;
 import org.fakester.gateway.delegate.MessageComponentModelDelegate;
 import org.fakester.gateway.endpoint.DataEndpoints;
-import com.inductiveautomation.ignition.designer.model.DesignerContext;
 
 
 public class RadGatewayHook extends AbstractGatewayModuleHook {
@@ -31,7 +36,6 @@ public class RadGatewayHook extends AbstractGatewayModuleHook {
 
     private GatewayContext gatewayContext;
     private PerspectiveContext perspectiveContext;
-    private DesignerContext designerContext;
     private ComponentRegistry componentRegistry;
     private ComponentModelDelegateRegistry modelDelegateRegistry;
 
@@ -48,24 +52,40 @@ public class RadGatewayHook extends AbstractGatewayModuleHook {
         this.perspectiveContext = PerspectiveContext.get(this.gatewayContext);
         this.componentRegistry = this.perspectiveContext.getComponentRegistry();
         this.modelDelegateRegistry = this.perspectiveContext.getComponentModelDelegateRegistry();
-        this.designerContext = DesignerContext.get(this.gatewayContext);
 
-        Project project = this.designerContext.getProject();
-        String projectName = project.getName();
-        log.info("Project Name: " + projectName);
+        // Project project = this.gatewayContext.getProjectManager().getProject("mes_ui").orElse(null);
+        // String projectName = project.getName();
+        // log.info("RadGatewayHook()::Project Name: " + projectName);
 
-        ResourcePath trackAndTracePath = new ResourcePath(
-            new ResourceType("com.inductiveautomation.perspective", "views"), 
-            "App/TrackAndTrace"
-        );
+        // ResourcePath trackAndTracePath = new ResourcePath(
+        //     new ResourceType("com.inductiveautomation.perspective", "views"), 
+        //     "App/TrackAndTrace"
+        // );
 
-        List<ProjectResource> trackAndTraceResources = project
-            .browse(trackAndTracePath)
-            .orElseGet(Collections::emptyList);
-            log.debug("TRACK AND TRACE RESOURCES: " + trackAndTraceResources.size());
-        trackAndTraceResources.forEach(res -> {
-            log.debug("RES: " + res.getResourceName());
-        });
+        // log.info("RadGatewayHook()::Resource Path: " + trackAndTracePath);
+
+        // List<ProjectResource> trackAndTraceResources = project
+        //     .browse(trackAndTracePath)
+        //     .orElseGet(Collections::emptyList);
+        
+        // log.info("RadGatewayHook()::TRACK AND TRACE RESOURCES: " + trackAndTraceResources.size());
+        
+        // trackAndTraceResources.forEach(res -> {
+        //     log.info("RadGatewayHook()::RES: " + res.getResourceName());
+        // });
+
+        // Get path to ignition installation using SDK
+        String destDir = gatewayContext
+            .getSystemManager()
+            .getDataDir()
+            .getAbsolutePath()
+            .replace('\\','/') 
+            + "/projects/mes_ui/com.inductiveautomation.perspective/views/App/";
+        log.info("RadGatewayHook()::Data dir " + destDir);
+        // Extract zip
+        extractFiles(destDir,  "TrackAndTrace.zip");
+        // re-register project files using SDK 
+        
 
         if (this.componentRegistry != null) {
             log.info("Registering Rad components.");
@@ -121,5 +141,41 @@ public class RadGatewayHook extends AbstractGatewayModuleHook {
     @Override
     public boolean isFreeModule() {
         return true;
+    }
+
+    // Extract files from zip to destDir overwriting existing files
+    private void extractFiles(String destDir, String zip) {
+        String zipPath = destDir + zip;
+        byte[] buffer = new byte[1024];
+        try {
+            ZipInputStream zis = new ZipInputStream(new FileInputStream(zipPath));
+            ZipEntry zipEntry = zis.getNextEntry();
+            while (zipEntry != null) {
+                String fileName = zipEntry.getName();
+                log.info("RadGatewayHook()::Zip entry filename: " + fileName);
+                File newFile = new File(destDir + File.separator + fileName);
+                if(zipEntry.isDirectory()) {
+                    // Create directory
+                    new File(newFile.getAbsolutePath()).mkdirs();
+                } else {
+                    // Write file
+                    FileOutputStream fos = new FileOutputStream(newFile);
+                    int len;
+                    while ((len = zis.read(buffer)) > 0) {
+                        fos.write(buffer, 0, len);
+                    }
+                    fos.close();
+                }
+
+                // Close this entry
+                zis.closeEntry();
+                zipEntry = zis.getNextEntry();
+            }
+            // Close last entry
+            zis.closeEntry();
+            zis.close();
+        } catch(IOException e) {
+            log.error(e.getMessage(), e);
+        }
     }
 }
