@@ -43,7 +43,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 // this file configures settings for the gradle build tools, as well as the project structure.
 // Generally this doesn't need to be altered unless you are adding/removing sub-projects.
-rootProject.name = "perspective-component"
+rootProject.name = "elev8-component"
 
 
 // link up our subprojects as part of this multi-project build.  Add/remove subprojects gradle path notation.

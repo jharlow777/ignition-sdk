@@ -1,4 +1,4 @@
-package org.fakester.designer.component;
+package com.gpa.designer.component;
 
 import java.util.Optional;
 import javax.annotation.Nullable;

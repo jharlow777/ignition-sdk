@@ -1,4 +1,4 @@
-package org.fakester.gateway.endpoint;
+package com.gpa.gateway.endpoint;
 
 import java.util.List;
 import java.util.Objects;

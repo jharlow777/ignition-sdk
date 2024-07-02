@@ -10,7 +10,7 @@ plugins {
 
 allprojects {
     version = "1.0.0"
-    group = "org.fakester"
+    group = "com.gpa"
 }
 
 ignitionModule {
@@ -19,7 +19,7 @@ ignitionModule {
 
     // module xml configuration
     name.set("Elev8Components")
-    id.set("org.fakester.radcomponent")
+    id.set("com.gpa.elev8component")
     moduleVersion.set("${project.version}")
     moduleDescription.set("A module that adds components to the Elev8 Perspective module.")
     requiredIgnitionVersion.set("8.1.8")
@@ -46,8 +46,8 @@ ignitionModule {
     // Ignition which classes should be loaded in a given scope.
     hooks.putAll(
         mapOf(
-            "org.fakester.gateway.RadGatewayHook" to "G",
-            "org.fakester.designer.RadDesignerHook" to "D"
+            "com.gpa.gateway.GatewayHook" to "G",
+            "com.gpa.designer.DesignerHook" to "D"
         )
     )
     skipModlSigning.set(true)
