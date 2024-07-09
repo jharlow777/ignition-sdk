@@ -22,7 +22,7 @@ ignitionModule {
     id.set("com.gpa.elev8component")
     moduleVersion.set("${project.version}")
     moduleDescription.set("A module that adds components to the Elev8 Perspective module.")
-    requiredIgnitionVersion.set("8.1.8")
+    requiredIgnitionVersion.set("8.1.42")
     license.set("license.html")
 
     // If we depend on other module being loaded/available, then we specify IDs of the module we depend on,
