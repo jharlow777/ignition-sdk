@@ -34,6 +34,7 @@ import com.inductiveautomation.ignition.gateway.web.models.DefaultConfigTab;
 import com.inductiveautomation.ignition.gateway.web.models.IConfigTab;
 import com.inductiveautomation.ignition.gateway.web.models.INamedTab;
 import com.inductiveautomation.ignition.gateway.web.pages.BasicReactPanel;
+import com.inductiveautomation.ignition.gateway.web.pages.IConfigPage;
 import com.inductiveautomation.ignition.gateway.web.pages.status.StatusCategories;
 import com.inductiveautomation.perspective.gateway.api.PerspectiveContext;
 import com.inductiveautomation.ignition.gateway.web.models.KeyValue;
@@ -42,6 +43,7 @@ import com.gpa.gateway.endpoint.DataEndpoints;
 import com.gpa.gateway.records.HCSettingsRecord;
 import com.gpa.gateway.web.Elev8InstallPage;
 import com.gpa.gateway.web.HCSettingsPage;
+import com.gpa.gateway.web.HCSettingsPageOrig;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.wicket.markup.html.WebMarkupContainer;
@@ -79,8 +81,22 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             .name("homeconnect")
             .i18n("HomeConnect.nav.settings.title")
             .page(HCSettingsPage.class)
-            .terms("elev8 install settings")
+            .terms("home connect settings")
             .build();
+
+    // private static final IConfigTab HCE_CONFIG_ENTRY = new DefaultConfigTab(
+    //     CONFIG_CATEGORY,
+    //     "homeconnect",
+    //     "HomeConnect.nav.settings.title",
+    //     HCSettingsPage.class
+    //     ) {
+
+    //     @Override
+    //     public ConfigPanel getPanel(IConfigPage configPage) {
+    //         // We've set  GatewayHook.getMountPathAlias() to return hce, so we need to use that alias here.
+    //         return new ConfigPanel(panelId, "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
+    //     }
+    // };
 
     @Override
     public List<? extends IConfigTab> getConfigPanels() {
@@ -196,7 +212,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     // other modules by other authors.
     @Override
     public Optional<String> getMountPathAlias() {
-        return Optional.of("gpa");
+        return Optional.of("hce");
     }
 
     // Use this whenever you have mounted resources
