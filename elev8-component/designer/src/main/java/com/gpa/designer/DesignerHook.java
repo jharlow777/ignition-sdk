@@ -67,4 +67,5 @@ public class DesignerHook extends AbstractDesignerModuleHook {
 
         delegateRegistry.remove(TagCounter.COMPONENT_ID);
     }
+
 }

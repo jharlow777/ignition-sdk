@@ -7,44 +7,6 @@
 ##### [Perspective Component](perspective-component)
 Adds a simple image component to the Perspective module's set of components.  In addition, utilizes Gradle as the build tool.  See the example readme for additional information.
 
-### Maven Examples
-
-##### [Expression Function](expression-function)
-Creates an exampleMultiply expression that can be used by other components, such as expression tags. The example expression is located under the Extended expression category.
-
-##### [Gateway Network/Get Remote Logs](gateway-network-function)
-Requires two Gateways connected via the gateway network. The module must also be installed on both Gateways. This module adds a system.example.getRemoteLogEntries script function that can retrieve console log entries from a remote Gateway over the gateway network. Also adds a Gateway Task type that can retrieve a remote gateway’s wrapper log and save as a local file.
-
-##### [Gateway Webpage/Home Connect](gateway-webpage)
-Demonstrates how to implement Gateway Status and Config pages. HomeConnect pages are added to the Gateway that configure an imaginary HomeConnect device.
-
-##### [Managed Tag Provider](managed-tag-provider)
-Shows how to implement a Managed Tag Provider, to allow easy control of Ignition tags from an external program or data.
-
-##### [OPC UA Device](opc-ua-device)
-Creates an example device in the Gateway. The device will create tags that are visible under the local OPC-UA server.
-
-##### [Perspective Component](perspective-component)
-Adds component to the Perspective module's set of components, demonstrating use of various APIs in a build automation which represents one possible solution for 'production' toolchains.  In addition, utilizes Gradle as the build tool.  See the example readme for additional information.
-
-##### [Perspective Minimal Component](perspective-component-minimal)
-Adds a single simple component to the Perspective component palette.  This minimal example demonstrates the minimal APIs required to register a single simple component.  See the larger Perspective Component example for
-
-##### [Report Component](report-component)
-Adds a Smiley shaped component to the Report Designer.
-
-##### [Report Datasource](report-datasource)
-Adds a datasource to the report designer that can retrieve JSON data via a REST call to a website.
-
-##### [Scripting Function (RPC)](scripting-function)
-Adds a system.example.multiply script that can be executed from both a client and a Gateway. Also demonstrates how the client can call a method in the Gateway via RPC.
-
-##### [Slack Alarm Notification](slack-alarm-notification)
-Adds a Slack Alarm Notification type that handles alarm notifications through Slack's outgoing webhooks.
-
-##### [Vision Component](vision-component)
-Creates a Hello World component that can be dragged onto a window in the Designer.
-
 ## The Module Build System
 
 These examples utilize either Maven and our Maven Plugin, or Gradle and our [Gradle Plugin](https://github.com/inductiveautomation/ignition-module-tools).  Both tools are mature and capable, offering different tradeoffs in terms of performance, ease of customization, language support, etc.  If you prefer XML configuration, take a look at Maven.  If you prefer declarative programming-language based configuration, check out Gradle.  Inductive Automation uses Gradle to build Ignition and our own modules with the same open source plugin linked above.

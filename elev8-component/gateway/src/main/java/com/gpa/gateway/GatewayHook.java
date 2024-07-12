@@ -8,25 +8,43 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.Arrays;
+import java.util.Collections;
 
+import com.inductiveautomation.ignition.common.BundleUtil;
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
 import com.inductiveautomation.ignition.common.project.Project;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.dataroutes.RouteGroup;
+import com.inductiveautomation.ignition.gateway.localdb.persistence.IRecordListener;
 import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.ignition.gateway.project.ProjectManager;
+import com.inductiveautomation.ignition.gateway.web.components.AbstractNamedTab;
+import com.inductiveautomation.ignition.gateway.web.components.ConfigPanel;
+import com.inductiveautomation.ignition.gateway.web.models.ConfigCategory;
+import com.inductiveautomation.ignition.gateway.web.models.DefaultConfigTab;
+import com.inductiveautomation.ignition.gateway.web.models.IConfigTab;
+import com.inductiveautomation.ignition.gateway.web.models.INamedTab;
+import com.inductiveautomation.ignition.gateway.web.pages.BasicReactPanel;
+import com.inductiveautomation.ignition.gateway.web.pages.status.StatusCategories;
 import com.inductiveautomation.perspective.gateway.api.PerspectiveContext;
+import com.inductiveautomation.ignition.gateway.web.models.KeyValue;
 import com.google.zxing.Writer;
 import com.gpa.gateway.endpoint.DataEndpoints;
+import com.gpa.gateway.records.HCSettingsRecord;
+import com.gpa.gateway.web.Elev8InstallPage;
+import com.gpa.gateway.web.HCSettingsPage;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.fakester.common.RadComponents;
 import org.hsqldb.lib.DataOutputStream;
 import org.json.JSONArray;
@@ -39,9 +57,108 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
     private GatewayContext gatewayContext;
 
+     /**
+     * This sets up the config panel
+     */
+    public static final ConfigCategory CONFIG_CATEGORY =
+        new ConfigCategory("HomeConnect", "HomeConnect.nav.header", 700);
+
+    @Override
+    public List<ConfigCategory> getConfigCategories() {
+        return Collections.singletonList(CONFIG_CATEGORY);
+    }
+
+    /**
+     * An IConfigTab contains all the info necessary to create a link to your config page on the gateway nav menu.
+     * In order to make sure the breadcrumb and navigation works properly, the 'name' field should line up
+     * with the right-hand value returned from {@link ConfigPanel#getMenuLocation}. In this case name("homeconnect")
+     * lines up with HCSettingsPage#getMenuLocation().getRight()
+     */
+    public static final IConfigTab HCE_CONFIG_ENTRY = DefaultConfigTab.builder()
+            .category(CONFIG_CATEGORY)
+            .name("homeconnect")
+            .i18n("HomeConnect.nav.settings.title")
+            .page(HCSettingsPage.class)
+            .terms("elev8 install settings")
+            .build();
+
+    @Override
+    public List<? extends IConfigTab> getConfigPanels() {
+        return Collections.singletonList(
+            HCE_CONFIG_ENTRY
+        );
+    }
+
     @Override
     public void setup(GatewayContext context) {
         this.gatewayContext = context;
+
+        log.debug("Beginning setup of Elev8 Install Module");
+
+        // Register GatewayHook.properties by registering the GatewayHook.class with BundleUtils
+        BundleUtil.get().addBundle("Elev8Install", getClass(), "Elev8Install");
+
+        //Verify tables for persistent records if necessary
+        verifySchema(context);
+
+        // create records if needed
+        maybeCreateHCSettings(context);
+
+        // get the settings record and do something with it...
+        HCSettingsRecord theOneRecord = context.getLocalPersistenceInterface().find(HCSettingsRecord.META, 0L);
+        log.info("Hub name: " + theOneRecord.getHCHubName());
+        log.info("IP address: " + theOneRecord.getHCIPAddress());
+
+        // listen for updates to the settings record...
+        HCSettingsRecord.META.addRecordListener(new IRecordListener<HCSettingsRecord>() {
+            @Override
+            public void recordUpdated(HCSettingsRecord hcSettingsRecord) {
+                log.info("recordUpdated()");
+            }
+
+            @Override
+            public void recordAdded(HCSettingsRecord hcSettingsRecord) {
+                log.info("recordAdded()");
+            }
+
+            @Override
+            public void recordDeleted(KeyValue keyValue) {
+                log.info("recordDeleted()");
+            }
+        });
+
+        log.debug("Setup Complete.");
+    }
+
+    private void verifySchema(GatewayContext context) {
+        try {
+            context.getSchemaUpdater().updatePersistentRecords(HCSettingsRecord.META);
+        } catch (SQLException e) {
+            log.error("Error verifying persistent record schemas for HomeConnect records.", e);
+        }
+    }
+
+    public void maybeCreateHCSettings(GatewayContext context) {
+        log.trace("Attempting to create HomeConnect Settings Record");
+        try {
+            HCSettingsRecord settingsRecord = context.getLocalPersistenceInterface().createNew(HCSettingsRecord.META);
+            settingsRecord.setId(0L);
+            settingsRecord.setHCIPAddress("192.168.1.99");
+            settingsRecord.setHCHubName("HomeConnect Hub");
+            settingsRecord.setHCPowerOutput(23);
+            settingsRecord.setHCDeviceCount(15);
+            settingsRecord.setBroadcastSSID(false);
+
+            /*
+			 * This doesn't override existing settings, only replaces it with these if we didn't
+			 * exist already.
+			 */
+            context.getSchemaUpdater().ensureRecordExists(settingsRecord);
+        } catch (Exception e) {
+            log.error("Failed to establish HCSettings Record exists", e);
+        }
+
+        log.trace("HomeConnect Settings Record Established");
     }
 
     @Override
@@ -55,12 +172,12 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             .getAbsolutePath()
             .replace('\\','/') 
             + "/projects/mes_ui/com.inductiveautomation.perspective/views/";
-        String mountPath = "mounted/";
+        //String mountPath = "res/elev8-component/gpa/";
         log.info("GatewayHook()::Views dir " + viewsDir);
 
         // Extract zip
-        // extractFiles(destDir,  "App/ModuleResources/TrackAndTrace.zip");
-        extractFiles(mountPath, "TrackAndTrace.zip");
+        extractFiles(viewsDir + "App/",  "ModuleResources/TrackAndTrace.zip");
+        //extractFiles(mountPath, "TrackAndTrace.zip");
 
         // Enable navigation option
         String navJsonPath = viewsDir + "GlobalComponents/Navigation/NavComponent/view.json";
@@ -72,7 +189,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
     @Override
     public void shutdown() {
-
+        BundleUtil.get().removeBundle("Elev8Install");
     }
 
     // getMountPathAlias() allows us to use a shorter mount path. Use caution, because we don't want a conflict with
