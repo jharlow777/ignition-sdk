@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { pollWaitAck } from 'ignition-lib';
-import { modelInstall } from './model';
+// import { pollWaitAck } from 'ignition-lib';
+// import { modelInstall } from './model';
 import Select from 'react-select';
 
-const ConnectOverview = (props) => {
+const ConnectOverview = () => {
     const options = [
-        { value: "Track And Trace", label: "Track And Trace" },
+        { value: "TrackAndTrace", label: "Track And Trace" },
         { value: "Quality", label: "Quality" },
-        { value: "Doc Management", label: "Doc Management" }
+        { value: "DocumentManager", label: "Doc Management" }
     ];
 
     const [features, setFeatures] = useState([]);
@@ -18,9 +18,24 @@ const ConnectOverview = (props) => {
 
     const install = () => {
         console.log("Selected features: ");
-        console.log(features.map((a) => a.value));
-        let response = pollWaitAck(props.dispatch, modelInstall, 5000);
-        console.log(response);
+        let params = features.map((a) => a.value);
+        console.log(params);
+
+        // Convert params array to a query string
+        let queryString = `?params=${params.join(',')}`;
+
+        fetch(`/data/hce/install/${queryString}`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(json => {
+            console.log("JSON Response: ");
+            console.log(json);
+        });
     };
 
     return (

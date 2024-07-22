@@ -24,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -39,39 +40,58 @@ public class HomeConnectStatusRoutes {
     }
 
     public void mountRoutes() {
-
         routes.newRoute("/install")
-            .handler((req, res) -> install(req, res, "Track And Trace"))
+            .handler((req, res) -> {
+                return install(req, res, req.getParameter("params"));
+            })
             .type(TYPE_JSON)
             .restrict(WicketAccessControl.STATUS_SECTION)
             .mount();
-
     }
 
-    public JSONObject install(RequestContext requestContext, HttpServletResponse httpServletResponse, String features) throws JSONException {
+    public JSONObject install(RequestContext requestContext, HttpServletResponse httpServletResponse, String params) throws JSONException {
         GatewayContext context = requestContext.getGatewayContext();
         JSONObject json = new JSONObject();
-        json.put("selected-features", features);
-        log.info("HomeConnectStatusRoutes()::installing " + features);
+        json.put("selected-features", params);
+        log.info("HomeConnectStatusRoutes()::selected-features " + params);
 
-        // Get path to ignition installation using SDK
-        String viewsDir = context
+        List<String> features = Arrays.asList(params.split(","));
+        features.forEach(feature -> {
+            log.info("HomeConnectStatusRoutes()::installing " + feature);
+
+            // Get path to ignition installation using SDK
+            String viewsDir = context
             .getSystemManager()
             .getDataDir()
             .getAbsolutePath()
             .replace('\\','/') 
             + "/projects/mes_ui/com.inductiveautomation.perspective/views/";
-        log.info("HomeConnectStatusRoutes()::Views dir " + viewsDir);
-        String mountedDir = "/mounted/project-resources/";
 
-        log.info("CWD: " +  System.getProperty("user.dir"));
-        // Extract zip
-        extractFiles(viewsDir + "App/",  "ModuleResources/TrackAndTrace.zip");
-        // extractFiles(mountedDir, "TrackAndTrace.zip");
+            String mountedDir = "/mounted/project-resources/";
 
-        // Enable navigation option
-        String navJsonPath = viewsDir + "GlobalComponents/Navigation/NavComponent/view.json";
-        enableNavComponent(navJsonPath);
+            // Extract zip
+            extractFiles(viewsDir + "App/",  "ModuleResources/" + feature + ".zip");
+            // extractFiles(mountedDir, "TrackAndTrace.zip");
+
+            // Enable navigation option
+            String navJsonPath = viewsDir + "GlobalComponents/Navigation/NavComponent/view.json";
+            int index = 0;
+            switch(feature) {
+                case "TrackAndTrace":
+                    index = 2;
+                    break;
+                case "Quality":
+                    index = 7;
+                    break;
+                case "DocumentManager":
+                    index = 8;
+                    break;
+                default:
+                    break;
+            }
+            enableNavComponent(navJsonPath, index);
+            log.info("HomeConnectStatusRoutes()::Successfully enabled nav menu item for " + feature);
+        });
 
         // Re-register project files using SDK 
         triggerResourceScan(context);
@@ -127,7 +147,7 @@ public class HomeConnectStatusRoutes {
         }
     }
 
-    private void enableNavComponent(String navJsonPath) {
+    private void enableNavComponent(String navJsonPath, int index) {
         File f = new File(navJsonPath);
         if (f.exists()){
             try {
@@ -141,15 +161,13 @@ public class HomeConnectStatusRoutes {
                     .getJSONObject(0) // Only one child
                     .getJSONObject("props")
                     .getJSONArray("items")
-                    .getJSONObject(2) // TrackAndTrace
+                    .getJSONObject(index)
                     .put("visible", true);
-                log.info("HomeConnectStatusRoutes()::Updated NavComponent JSONObject: " + json);  
 
                 // Write back to file
                 Path path = Paths.get(navJsonPath);
                 byte[] strToBytes = JSONObject.valueToString(json).getBytes();
                 Files.write(path, strToBytes);
-                log.info("HomeConnectStatusRoutes()::Successfully enabled nav menu item for TrackAndTrace");
             } catch(Exception e) {
                 log.error("HomeConnectStatusRoutes()::Failed to parse NavComponent's view.json with error: " + e.getMessage());
             }
