@@ -54,8 +54,9 @@ const ConnectOverview = () => {
 
         // Display confirmation dialog
         if (window.confirm(confirmationMessage)) {
-            console.log("Installing");
+            console.log("Installed");
             install();
+            alert("Installed");
         } else {
             console.log("Install cancelled");
         }
