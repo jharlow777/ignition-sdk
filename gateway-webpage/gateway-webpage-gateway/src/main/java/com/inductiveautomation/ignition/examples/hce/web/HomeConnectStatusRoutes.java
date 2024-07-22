@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Arrays;
@@ -55,26 +56,22 @@ public class HomeConnectStatusRoutes {
         json.put("selected-features", params);
         log.info("HomeConnectStatusRoutes()::selected-features " + params);
 
+        // Get path to ignition installation using SDK
+        String viewsDir = context
+        .getSystemManager()
+        .getDataDir()
+        .getAbsolutePath()
+        .replace('\\','/') 
+        + "/projects/mes_ui/com.inductiveautomation.perspective/views/";
+
         List<String> features = Arrays.asList(params.split(","));
         features.forEach(feature -> {
             log.info("HomeConnectStatusRoutes()::installing " + feature);
 
-            // Get path to ignition installation using SDK
-            String viewsDir = context
-            .getSystemManager()
-            .getDataDir()
-            .getAbsolutePath()
-            .replace('\\','/') 
-            + "/projects/mes_ui/com.inductiveautomation.perspective/views/";
-
-            String mountedDir = "/mounted/project-resources/";
-
             // Extract zip
-            extractFiles(viewsDir + "App/",  "ModuleResources/" + feature + ".zip");
-            // extractFiles(mountedDir, "TrackAndTrace.zip");
+            extractFiles(viewsDir + "App/", feature + ".zip");
 
             // Enable navigation option
-            String navJsonPath = viewsDir + "GlobalComponents/Navigation/NavComponent/view.json";
             int index = 0;
             switch(feature) {
                 case "TrackAndTrace":
@@ -87,53 +84,57 @@ public class HomeConnectStatusRoutes {
                     index = 8;
                     break;
                 default:
+                    log.error("HomeConnectStatusRoutes()::install()::Undefined nav menu item: " + feature);
                     break;
             }
-            enableNavComponent(navJsonPath, index);
-            log.info("HomeConnectStatusRoutes()::Successfully enabled nav menu item for " + feature);
+            enableNavComponent(viewsDir + "GlobalComponents/Navigation/NavComponent/view.json", index);
         });
 
-        // Re-register project files using SDK 
+        // Re-register project files
         triggerResourceScan(context);
 
         log.info("HomeConnectStatusRoutes()::install()::json response " + json);
         return json;
     }
 
-     // Extract files from zip to destDir overwriting existing files
-    private void extractFiles(String destDir, String zip) {
-        String zipPath = destDir + zip;
-        byte[] buffer = new byte[1024];
-        try {
-            ZipInputStream zis = new ZipInputStream(new FileInputStream(zipPath));
-            ZipEntry zipEntry = zis.getNextEntry();
-            while (zipEntry != null) {
-                String fileName = zipEntry.getName();
-                // log.info("HomeConnectStatusRoutes()::Zip entry filename: " + fileName);
-                File newFile = new File(destDir + File.separator + fileName);
-                if(zipEntry.isDirectory()) {
-                    // Create directory
-                    new File(newFile.getAbsolutePath()).mkdirs();
-                } else {
-                    // Write file
-                    FileOutputStream fos = new FileOutputStream(newFile);
-                    int len;
-                    while ((len = zis.read(buffer)) > 0) {
-                        fos.write(buffer, 0, len);
-                    }
-                    fos.close();
-                }
-
-                // Close this entry
-                zis.closeEntry();
-                zipEntry = zis.getNextEntry();
+    // Extract files from zip to destDir overwriting existing files
+    private void extractFiles(String destDir, String zipFileName) {
+        try (InputStream zipStream = getClass().getClassLoader().getResourceAsStream(zipFileName)) {
+            if (zipStream == null) {
+                log.error("Zip file not found: " + zipFileName);
             }
-            // Close last entry
-            zis.closeEntry();
-            zis.close();
-        } catch(IOException e) {
-            log.error(e.getMessage(), e);
-        }
+            try (ZipInputStream zis = new ZipInputStream(zipStream)) {
+                ZipEntry zipEntry = zis.getNextEntry();
+                byte[] buffer = new byte[1024];
+
+                while (zipEntry != null) {
+                    File newFile = new File(destDir, zipEntry.getName());
+
+                    if (zipEntry.isDirectory()) {
+                        if (!newFile.isDirectory() && !newFile.mkdirs()) {
+                            throw new IOException("Failed to create directory " + newFile);
+                        }
+                    } else {
+                        File parent = newFile.getParentFile();
+                        if (!parent.isDirectory() && !parent.mkdirs()) {
+                            throw new IOException("Failed to create directory " + parent);
+                        }
+
+                        try (FileOutputStream fos = new FileOutputStream(newFile)) {
+                            int len;
+                            while ((len = zis.read(buffer)) > 0) {
+                                fos.write(buffer, 0, len);
+                            }
+                        }
+                    }
+                    zis.closeEntry();
+                    zipEntry = zis.getNextEntry();
+                }
+            }
+        } catch (IOException e) {
+            log.error("Error extracting zip file: " + e.getMessage(), e);
+
+        };
     }
 
     // Trigger Project Resource Scan to immediately update
@@ -147,6 +148,7 @@ public class HomeConnectStatusRoutes {
         }
     }
 
+    // Enable nav menu item at index
     private void enableNavComponent(String navJsonPath, int index) {
         File f = new File(navJsonPath);
         if (f.exists()){
@@ -168,9 +170,12 @@ public class HomeConnectStatusRoutes {
                 Path path = Paths.get(navJsonPath);
                 byte[] strToBytes = JSONObject.valueToString(json).getBytes();
                 Files.write(path, strToBytes);
+                log.info("HomeConnectStatusRoutes()::Successfully enabled nav menu item");
             } catch(Exception e) {
                 log.error("HomeConnectStatusRoutes()::Failed to parse NavComponent's view.json with error: " + e.getMessage());
             }
+        } else {
+            log.error("HomeConnectStatusRoutes()::Failed to find nav menu file");
         }
     }
 }
