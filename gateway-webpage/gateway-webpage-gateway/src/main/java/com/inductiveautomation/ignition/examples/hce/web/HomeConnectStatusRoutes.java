@@ -16,16 +16,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import static com.inductiveautomation.ignition.gateway.dataroutes.RouteGroup.TYPE_JSON;
 
-import java.io.File;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -66,7 +60,7 @@ public class HomeConnectStatusRoutes {
 
         log.info("CWD: " +  System.getProperty("user.dir"));
         // Extract zip
-        extractFiles(viewsDir + "App/",  "ModuleResources/TrackAndTrace.zip");
+        extractFiles(viewsDir + "App/", "TrackAndTrace.zip");
         // extractFiles(mountedDir, "TrackAndTrace.zip");
 
         // Enable navigation option
@@ -81,40 +75,44 @@ public class HomeConnectStatusRoutes {
     }
 
      // Extract files from zip to destDir overwriting existing files
-    private void extractFiles(String destDir, String zip) {
-        String zipPath = destDir + zip;
-        byte[] buffer = new byte[1024];
-        try {
-            ZipInputStream zis = new ZipInputStream(new FileInputStream(zipPath));
-            ZipEntry zipEntry = zis.getNextEntry();
-            while (zipEntry != null) {
-                String fileName = zipEntry.getName();
-                // log.info("HomeConnectStatusRoutes()::Zip entry filename: " + fileName);
-                File newFile = new File(destDir + File.separator + fileName);
-                if(zipEntry.isDirectory()) {
-                    // Create directory
-                    new File(newFile.getAbsolutePath()).mkdirs();
-                } else {
-                    // Write file
-                    FileOutputStream fos = new FileOutputStream(newFile);
-                    int len;
-                    while ((len = zis.read(buffer)) > 0) {
-                        fos.write(buffer, 0, len);
-                    }
-                    fos.close();
-                }
+     private void extractFiles(String destDir, String zipFileName) {
+         try (InputStream zipStream = getClass().getClassLoader().getResourceAsStream(zipFileName)) {
+             if (zipStream == null) {
+                 log.error("Zip file not found: " + zipFileName);
+                 return;
+             }
+             try (ZipInputStream zis = new ZipInputStream(zipStream)) {
+                 ZipEntry zipEntry = zis.getNextEntry();
+                 byte[] buffer = new byte[1024];
 
-                // Close this entry
-                zis.closeEntry();
-                zipEntry = zis.getNextEntry();
-            }
-            // Close last entry
-            zis.closeEntry();
-            zis.close();
-        } catch(IOException e) {
-            log.error(e.getMessage(), e);
-        }
-    }
+                 while (zipEntry != null) {
+                     File newFile = new File(destDir, zipEntry.getName());
+
+                     if (zipEntry.isDirectory()) {
+                         if (!newFile.isDirectory() && !newFile.mkdirs()) {
+                             throw new IOException("Failed to create directory " + newFile);
+                         }
+                     } else {
+                         File parent = newFile.getParentFile();
+                         if (!parent.isDirectory() && !parent.mkdirs()) {
+                             throw new IOException("Failed to create directory " + parent);
+                         }
+
+                         try (FileOutputStream fos = new FileOutputStream(newFile)) {
+                             int len;
+                             while ((len = zis.read(buffer)) > 0) {
+                                 fos.write(buffer, 0, len);
+                             }
+                         }
+                     }
+                     zis.closeEntry();
+                     zipEntry = zis.getNextEntry();
+                 }
+             }
+         } catch (IOException e) {
+             log.error("Error extracting zip file: " + e.getMessage(), e);
+         }
+     }
 
     // Trigger Project Resource Scan to immediately update
     private void triggerResourceScan(GatewayContext context) {
