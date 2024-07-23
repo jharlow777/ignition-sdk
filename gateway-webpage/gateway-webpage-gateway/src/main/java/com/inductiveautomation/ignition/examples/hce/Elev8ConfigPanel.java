@@ -12,6 +12,7 @@ import com.inductiveautomation.ignition.gateway.web.components.ConfigPanel;
 import com.inductiveautomation.ignition.gateway.web.components.InvisibleContainer;
 import com.inductiveautomation.ignition.gateway.web.pages.BasicReactPanel;
 import com.inductiveautomation.ignition.gateway.web.pages.IConfigPage;
+import com.inductiveautomation.ignition.gateway.web.components.react.ReactComponent;
 
 public class Elev8ConfigPanel extends ConfigPanel{
     private static final LoggerEx log = LogUtil.getLogger(Elev8ConfigPanel.class.getSimpleName());
@@ -20,29 +21,19 @@ public class Elev8ConfigPanel extends ConfigPanel{
         Pair.of(GatewayHook.CONFIG_CATEGORY.getName(), "homeconnect");
 
     protected void initComponents(){
-        Form form = new Form("form");
-
-        Button submit = new Button("submit-button-test");
-        form.add(new Component[]{submit});
-        form.add(new Component[]{this.createCustomEditPanel("custom-edit-panel")});
-        this.add(new Component[]{form});
-        this.add(new Component[]{this.createFooterComponent("footer")});
-        log.info("Elev8ConfigPanel()::Created form: " + form.getId());
-    }
-
-    protected Component createCustomEditPanel(String id) {
-        log.info("Elev8ConfigPanel()::createCustomEditPanel");
-        return new BasicReactPanel("react", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
-    }
-
-    protected WebMarkupContainer createFooterComponent(String id) {
-      return new InvisibleContainer(id);
+        log.info("Elev8ConfigPanel()::initComponents()::initializing Elev8ConfigPanel");
     }
 
     public Elev8ConfigPanel(final IConfigPage configPage) {
         super("HomeConnect.nav.settings.title");
-        log.info("Elev8ConfigPanel()::Initializing");
+        log.info("Elev8ConfigPanel()::Initializing with configPage");
         this.initComponents();
+    }
+
+    public Elev8ConfigPanel(String titleKey, String defaultTitle, IConfigPage configPage, ConfigPanel returnPanel, String id, String jsUrl, String jsLibraryName) {
+        super(titleKey, defaultTitle, configPage, returnPanel);
+        log.info("Elev8ConfigPanel()::Initializing with ReactComponent");
+        this.add(new Component[]{new ReactComponent("react", jsUrl, jsLibraryName)});
     }
 
     @Override

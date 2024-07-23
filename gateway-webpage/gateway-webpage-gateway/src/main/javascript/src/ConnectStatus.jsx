@@ -9,9 +9,11 @@ const ConnectOverview = () => {
     ];
 
     const [features, setFeatures] = useState([]);
+    const [installDisabled, setInstallDisabled] = useState(true);
 
     const handleChange = (selectedFeatures) => {
         setFeatures(selectedFeatures || []);
+        setInstallDisabled(selectedFeatures.length === 0); // Update button state based on selectedFeatures
     };
 
     const install = () => {
@@ -54,7 +56,6 @@ const ConnectOverview = () => {
 
         // Display confirmation dialog
         if (window.confirm(confirmationMessage)) {
-            console.log("Installed");
             install();
             alert("Installed");
         } else {
@@ -75,15 +76,16 @@ const ConnectOverview = () => {
                     <button
                         style={{
                             padding: '10px 20px',
-                            backgroundColor: '#2199e8',
+                            backgroundColor: installDisabled ? '#cccccc' : '#2199e8', // Grey if disabled
                             color: 'white',
                             border: 'none',
                             borderRadius: '5px',
-                            cursor: 'pointer',
+                            cursor: installDisabled ? 'not-allowed' : 'pointer', // Change cursor if disabled
                             fontSize: '16px',
                             fontWeight: 'bold'
                         }}
                         onClick={showConfirmation}
+                        disabled={installDisabled} // Disable button when features are empty
                     >
                         Install
                     </button>

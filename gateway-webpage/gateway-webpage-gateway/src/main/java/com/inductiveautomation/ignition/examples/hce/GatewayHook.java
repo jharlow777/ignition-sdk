@@ -25,12 +25,18 @@ import com.inductiveautomation.ignition.gateway.web.models.INamedTab;
 import com.inductiveautomation.ignition.gateway.web.models.KeyValue;
 import com.inductiveautomation.ignition.gateway.web.pages.BasicReactPanel;
 import com.inductiveautomation.ignition.gateway.web.pages.status.StatusCategories;
+import com.inductiveautomation.ignition.gateway.web.models.DefaultConfigTab;
 import org.apache.wicket.markup.html.WebMarkupContainer;
+import com.inductiveautomation.ignition.gateway.web.pages.IConfigPage;
+import com.inductiveautomation.ignition.gateway.web.components.ConfigPanel;
+import com.inductiveautomation.ignition.gateway.web.components.react.ReactComponent;
+import com.inductiveautomation.ignition.gateway.web.models.LenientResourceModel;
+import org.apache.wicket.model.IModel;
 
 public class GatewayHook extends AbstractGatewayModuleHook {
     private GatewayContext context;
 
-    private final LoggerEx log = LogUtil.getLogger(getClass().getSimpleName());
+    private static final LoggerEx log = LogUtil.getLogger(GatewayHook.class.getSimpleName());
 
     /**
      * This sets up the status panel which we'll add to the statusPanels list. The controller will be
@@ -52,6 +58,11 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         public Iterable<String> getSearchTerms(){
             return Arrays.asList("home connect", "hce");
         }
+
+        @Override
+        public IModel<String> getTitle(){
+            return new LenientResourceModel("HomeConnect.nav.status.header", "Elev8 Install Status");
+        }
     };
 
     /**
@@ -71,31 +82,42 @@ public class GatewayHook extends AbstractGatewayModuleHook {
      * with the right-hand value returned from {@link ConfigPanel#getMenuLocation}. In this case name("homeconnect")
      * lines up with HCSettingsPage#getMenuLocation().getRight()
      */
-    public static final IConfigTab HCE_CONFIG_ENTRY = Elev8ConfigTab.builder()
-            .category(CONFIG_CATEGORY)
-            .name("homeconnect")
-            .i18n("HomeConnect.nav.settings.title")
-            .page(HCSettingsPage.class)
-            .terms("home connect settings")
-            .build();
+    // public static final IConfigTab HCE_CONFIG_ENTRY = Elev8ConfigTab.builder()
+    //         .category(CONFIG_CATEGORY)
+    //         .name("homeconnect")
+    //         .i18n("HomeConnect.nav.settings.title")
+    //         .page(Elev8ConfigPanel.class)
+    //         .terms("home connect settings")
+    //         .build();
 
-    // private static final IConfigTab HCE_CONFIG_ENTRY = new Elev8ConfigTab(
-    //         CONFIG_CATEGORY,
-    //         "homeconnect",
-    //         "HomeConnect.nav.settings.title",
-    //         HCSettingsPage.class) {
+    private static final IConfigTab HCE_CONFIG_ENTRY = new Elev8ConfigTab(
+            "HomeConnect",
+            "homeconnect",
+            "HomeConnect.nav.status.header"
+    )
+    {
+        @Override
+        public ConfigPanel getPanel(IConfigPage configPage) {
+            log.info("GatewayHook()::DefaultConfigTab.getPanel(configPage)");
+            return new Elev8ConfigPanel("HomeConnect.nav.settings.title", "Install", null, null, "id", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
+        }
 
-    //     @Override
-    //     public WebMarkupContainer getPanel(String panelId) {
-    //         // We've set  GatewayHook.getMountPathAlias() to return hce, so we need to use that alias here.
-    //         return new BasicReactPanel(panelId, "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
-    //     }
+        @Override
+        public WebMarkupContainer getPanel(String panelId) {
+            log.info("GatewayHook()::DefaultConfigTab.getPanel(panelId):" + panelId);
+            return new BasicReactPanel(panelId, "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
+        }
 
-    //     @Override
-    //     public Iterable<String> getSearchTerms(){
-    //         return Arrays.asList("home connect", "hce");
-    //     }
-    // };
+        @Override
+        public Iterable<String> getSearchTerms(){
+            return Arrays.asList("home connect", "hce");
+        }
+
+        @Override
+        public IModel<String> getTitle(){
+            return new LenientResourceModel("HomeConnect.nav.status.header", "Elev8 Install");
+        }
+    };
 
     @Override
     public List<? extends IConfigTab> getConfigPanels() {
@@ -184,10 +206,6 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         BundleUtil.get().removeBundle("HomeConnect");
     }
 
-    /**
-     * The following methods are used by the status panel. Only add these if you are providing a status panel.
-     */
-
     // getMountPathAlias() allows us to use a shorter mount path. Use caution, because we don't want a conflict with
     // other modules by other authors.
     @Override
@@ -209,6 +227,8 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
     @Override
     public List<? extends INamedTab> getStatusPanels() {
-        return Collections.singletonList(HCE_STATUS_PAGE);
+        return Collections.singletonList(
+            HCE_STATUS_PAGE
+        );
     }
 }
