@@ -44,7 +44,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
      * Only add if your module will provide meaningful info.
      */
     private static final INamedTab HCE_STATUS_PAGE = new AbstractNamedTab(
-            "homeconnect",
+            "elev8install",
             StatusCategories.SYSTEMS,
             "HomeConnect.nav.status.header") {
 
@@ -85,10 +85,10 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
     public static final IConfigTab HCE_CONFIG_ENTRY = DefaultConfigTab.builder()
         .category(CONFIG_CATEGORY)
-        .name("homeconnect")
+        .name("elev8install")
         .i18n("HomeConnect.nav.settings.title")
         .page(Elev8ConfigPanel.class)
-        .terms("home connect settings")
+        .terms("elev8 install")
         .build();
 
     // private static final IConfigTab HCE_CONFIG_ENTRY = new Elev8ConfigTab(

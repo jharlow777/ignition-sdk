@@ -72,7 +72,7 @@ public class HomeConnectStatusRoutes {
             .mount();
     }
 
-    // FOR TESTING: Reset all modules install status
+    // FOR TESTING: Reset all modules' install status
     public JSONObject resetInstallStatus(RequestContext requestContext) throws SQLException {
         SRConnection conn = null;
         try {
