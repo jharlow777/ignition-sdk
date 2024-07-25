@@ -62,24 +62,52 @@ public class HomeConnectStatusRoutes {
             .type(TYPE_JSON)
             .restrict(WicketAccessControl.STATUS_SECTION)
             .mount();
+        
+        routes.newRoute("/resetFeatures")
+            .handler((req, res) -> {
+                return resetInstallStatus(req);
+            })
+            .type(TYPE_JSON)
+            .restrict(WicketAccessControl.STATUS_SECTION)
+            .mount();
+    }
+
+    // FOR TESTING: Reset all modules install status
+    public JSONObject resetInstallStatus(RequestContext requestContext) throws SQLException {
+        SRConnection conn = null;
+        try {
+            GatewayContext context = requestContext.getGatewayContext();
+            DatasourceManager datasourceManager = context.getDatasourceManager();
+            conn = datasourceManager.getConnection("MSSQL_MES");
+            conn.runUpdateQuery("UPDATE config.modules SET isInstalled = 0");
+        } catch(SQLException e) {
+            log.info("HomeConnectStatusRoutes()::resetInstallStatus()::Failed to update due to SQLException: " + e.getMessage());
+        } finally {
+            conn.close();
+        }
+        return null;
     }
 
     public JSONObject retrieveAvailableFeatures(RequestContext requestContext, HttpServletResponse httpServletResponse) throws SQLException, JSONException {
         JSONObject json = new JSONObject();
+        SRConnection conn = null;
         try {
             GatewayContext context = requestContext.getGatewayContext();
             DatasourceManager datasourceManager = context.getDatasourceManager();
-            SRConnection conn = datasourceManager.getConnection("MSSQL_MES");
+            conn = datasourceManager.getConnection("MSSQL_MES");
+
             Dataset result = conn.runQuery("SELECT name FROM config.modules WHERE isActive = 1 AND isInstalled = 0");
             List<Object> features = result.getColumnAsList(0);
             json.put("availableFeatures", features);
         } catch(SQLException e) {
             log.error("HomeConnectStatusRoutes()::retrieveFeatures()::SQLException " + e.getMessage());
+        } finally {
+            conn.close();
         }
         return json;
     }
 
-    public JSONObject install(RequestContext requestContext, HttpServletResponse httpServletResponse, String params) throws JSONException {
+    public JSONObject install(RequestContext requestContext, HttpServletResponse httpServletResponse, String params) throws SQLException, JSONException {
         GatewayContext context = requestContext.getGatewayContext();
         JSONObject json = new JSONObject();
         json.put("selected-features", params);
@@ -94,6 +122,8 @@ public class HomeConnectStatusRoutes {
         + "/projects/mes_ui/com.inductiveautomation.perspective/views/";
 
         List<String> features = Arrays.asList(params.split(","));
+        DatasourceManager datasourceManager = context.getDatasourceManager();
+        SRConnection conn = datasourceManager.getConnection("MSSQL_MES");
         features.forEach(feature -> {
             log.info("HomeConnectStatusRoutes()::installing " + feature);
 
@@ -117,7 +147,19 @@ public class HomeConnectStatusRoutes {
                     break;
             }
             enableNavComponent(viewsDir + "GlobalComponents/Navigation/NavComponent/view.json", index);
+
+            try {
+                int result = conn.runUpdateQuery("UPDATE config.modules SET isInstalled = 1 WHERE name = '" + feature + "'");
+                if(result == 1) {
+                    log.info("HomeConnectStatusRoutes()::install()::Updated modules install status for " + feature);
+                } else {
+                    log.error("HomeConnectStatusRoutes()::install()::Failed to update modules install status for " + feature);
+                }
+            } catch(SQLException e) {
+                log.info("HomeConnectStatusRoutes()::install()::Failed to update modules install status for " + feature + " due to SQLException: " + e.getMessage());
+            }
         });
+        conn.close();
 
         // Re-register project files
         triggerResourceScan(context);

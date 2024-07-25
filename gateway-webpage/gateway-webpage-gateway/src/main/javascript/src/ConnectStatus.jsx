@@ -5,41 +5,45 @@ const ConnectOverview = () => {
     const [options, setOptions] = useState([]);
     const [features, setFeatures] = useState([]);
     const [installDisabled, setInstallDisabled] = useState(true);
+    const [refreshOptions, setRefreshOptions] = useState(false);
+
+    // Function to fetch options
+    const fetchOptions = () => {
+        fetch(`/data/hce/activeFeatures`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(json => {
+            console.log("activeFeatures JSON Response: ");
+            console.log(json);
+            if (json.availableFeatures) {
+                console.log(json.availableFeatures);
+                const formattedOptions = json.availableFeatures.map(name => ({
+                    value: name,
+                    label: name
+                }));
+
+                setOptions(formattedOptions);
+
+                // Disable the Install button if there are no options available
+                setInstallDisabled(formattedOptions.length === 0);
+            } else {
+                throw new Error("Invalid features array retrieved from config.modules");
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching options:', error);
+        });
+    };
 
     useEffect(() => {
-        // Fetch options from the endpoint when the component mounts
-        const fetchOptions = () => {
-            try {
-                fetch(`/data/hce/activeFeatures`, {
-                    method: 'GET',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(json => {
-                    console.log("activeFeatures JSON Response: ");
-                    console.log(json);
-                    if(json.availableFeatures) {
-                        console.log(json.availableFeatures);
-                        const formattedOptions = json.availableFeatures.map(name => ({
-                            value: name,
-                            label: name
-                        }));
-
-                        setOptions(formattedOptions);
-                    } else {
-                        throw new Error("Invalid features array retrieved from config.modules");
-                    }
-                });
-            } catch (error) {
-                console.error('Error fetching options:', error);
-            }
-        };
-
+        // Fetch options when the component mounts or when refreshOptions changes
         fetchOptions();
-    }, []);
+    }, [refreshOptions]);
 
     const handleChange = (selectedFeatures) => {
         setFeatures(selectedFeatures || []);
@@ -66,7 +70,21 @@ const ConnectOverview = () => {
             console.log("install JSON Response: ");
             console.log(json);
         });
+
+        setFeatures([]);
+        setRefreshOptions(prev => !prev); // Toggle refreshOptions to retrigger fetchOptions
     };
+
+    const resetFeatures = () => {
+        fetch(`/data/hce/resetFeatures`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        window.location.reload();
+    }
 
     const showConfirmation = () => {
         console.log("Install clicked");
@@ -116,6 +134,21 @@ const ConnectOverview = () => {
                 disabled={installDisabled} // Disable button when features are empty
             >
                 Install
+            </button>
+            <button
+                style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#2199e8',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    fontWeight: 'bold'
+                }}
+                onClick={resetFeatures}
+            >
+                Reset
             </button>
         </div>
     );
