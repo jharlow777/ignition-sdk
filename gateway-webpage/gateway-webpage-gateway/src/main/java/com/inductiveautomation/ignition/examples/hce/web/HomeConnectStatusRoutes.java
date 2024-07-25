@@ -7,10 +7,16 @@ import com.inductiveautomation.ignition.gateway.dataroutes.RouteGroup;
 import com.inductiveautomation.ignition.gateway.dataroutes.WicketAccessControl;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.ignition.gateway.project.ProjectManager;
+import com.inductiveautomation.ignition.gateway.datasource.SRConnection;
+import com.inductiveautomation.ignition.gateway.datasource.DatasourceManager;
+import com.inductiveautomation.ignition.common.Dataset;
+import com.inductiveautomation.ignition.gateway.datasource.Datasource;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.apache.commons.io.IOUtils;
+
+import java.sql.SQLException;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -48,6 +54,29 @@ public class HomeConnectStatusRoutes {
             .type(TYPE_JSON)
             .restrict(WicketAccessControl.STATUS_SECTION)
             .mount();
+
+        routes.newRoute("/activeFeatures")
+            .handler((req, res) -> {
+                return retrieveAvailableFeatures(req, res);
+            })
+            .type(TYPE_JSON)
+            .restrict(WicketAccessControl.STATUS_SECTION)
+            .mount();
+    }
+
+    public JSONObject retrieveAvailableFeatures(RequestContext requestContext, HttpServletResponse httpServletResponse) throws SQLException, JSONException {
+        JSONObject json = new JSONObject();
+        try {
+            GatewayContext context = requestContext.getGatewayContext();
+            DatasourceManager datasourceManager = context.getDatasourceManager();
+            SRConnection conn = datasourceManager.getConnection("MSSQL_MES");
+            Dataset result = conn.runQuery("SELECT name FROM config.modules WHERE isActive = 1 AND isInstalled = 0");
+            List<Object> features = result.getColumnAsList(0);
+            json.put("availableFeatures", features);
+        } catch(SQLException e) {
+            log.error("HomeConnectStatusRoutes()::retrieveFeatures()::SQLException " + e.getMessage());
+        }
+        return json;
     }
 
     public JSONObject install(RequestContext requestContext, HttpServletResponse httpServletResponse, String params) throws JSONException {

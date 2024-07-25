@@ -1,15 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 
 const ConnectOverview = () => {
-    const options = [
-        { value: "TrackAndTrace", label: "Track And Trace" },
-        { value: "Quality", label: "Quality" },
-        { value: "DocumentManager", label: "Doc Management" }
-    ];
-
+    const [options, setOptions] = useState([]);
     const [features, setFeatures] = useState([]);
     const [installDisabled, setInstallDisabled] = useState(true);
+
+    useEffect(() => {
+        // Fetch options from the endpoint when the component mounts
+        const fetchOptions = () => {
+            try {
+                fetch(`/data/hce/activeFeatures`, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(json => {
+                    console.log("activeFeatures JSON Response: ");
+                    console.log(json);
+                    if(json.availableFeatures) {
+                        console.log(json.availableFeatures);
+                        const formattedOptions = json.availableFeatures.map(name => ({
+                            value: name,
+                            label: name
+                        }));
+
+                        setOptions(formattedOptions);
+                    } else {
+                        throw new Error("Invalid features array retrieved from config.modules");
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching options:', error);
+            }
+        };
+
+        fetchOptions();
+    }, []);
 
     const handleChange = (selectedFeatures) => {
         setFeatures(selectedFeatures || []);
@@ -33,7 +63,7 @@ const ConnectOverview = () => {
         })
         .then(response => response.json())
         .then(json => {
-            console.log("JSON Response: ");
+            console.log("install JSON Response: ");
             console.log(json);
         });
     };
@@ -65,32 +95,28 @@ const ConnectOverview = () => {
 
     return (
         <div>
-            <div>
-                <div>
-                    <Select
-                        options={options}
-                        onChange={handleChange}
-                        value={features}
-                        isMulti
-                    />
-                    <button
-                        style={{
-                            padding: '10px 20px',
-                            backgroundColor: installDisabled ? '#cccccc' : '#2199e8', // Grey if disabled
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '5px',
-                            cursor: installDisabled ? 'not-allowed' : 'pointer', // Change cursor if disabled
-                            fontSize: '16px',
-                            fontWeight: 'bold'
-                        }}
-                        onClick={showConfirmation}
-                        disabled={installDisabled} // Disable button when features are empty
-                    >
-                        Install
-                    </button>
-                </div>
-            </div>
+            <Select
+                options={options}
+                onChange={handleChange}
+                value={features}
+                isMulti
+            />
+            <button
+                style={{
+                    padding: '10px 20px',
+                    backgroundColor: installDisabled ? '#cccccc' : '#2199e8', // Grey if disabled
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: installDisabled ? 'not-allowed' : 'pointer', // Change cursor if disabled
+                    fontSize: '16px',
+                    fontWeight: 'bold'
+                }}
+                onClick={showConfirmation}
+                disabled={installDisabled} // Disable button when features are empty
+            >
+                Install
+            </button>
         </div>
     );
 };

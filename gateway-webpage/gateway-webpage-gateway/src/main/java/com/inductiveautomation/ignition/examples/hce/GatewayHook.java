@@ -82,42 +82,44 @@ public class GatewayHook extends AbstractGatewayModuleHook {
      * with the right-hand value returned from {@link ConfigPanel#getMenuLocation}. In this case name("homeconnect")
      * lines up with HCSettingsPage#getMenuLocation().getRight()
      */
-    // public static final IConfigTab HCE_CONFIG_ENTRY = Elev8ConfigTab.builder()
-    //         .category(CONFIG_CATEGORY)
-    //         .name("homeconnect")
-    //         .i18n("HomeConnect.nav.settings.title")
-    //         .page(Elev8ConfigPanel.class)
-    //         .terms("home connect settings")
-    //         .build();
 
-    private static final IConfigTab HCE_CONFIG_ENTRY = new Elev8ConfigTab(
-            "HomeConnect",
-            "homeconnect",
-            "HomeConnect.nav.status.header"
-    )
-    {
-        @Override
-        public ConfigPanel getPanel(IConfigPage configPage) {
-            log.info("GatewayHook()::DefaultConfigTab.getPanel(configPage)");
-            return new Elev8ConfigPanel("HomeConnect.nav.settings.title", "Install", null, null, "id", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
-        }
+    public static final IConfigTab HCE_CONFIG_ENTRY = DefaultConfigTab.builder()
+        .category(CONFIG_CATEGORY)
+        .name("homeconnect")
+        .i18n("HomeConnect.nav.settings.title")
+        .page(Elev8ConfigPanel.class)
+        .terms("home connect settings")
+        .build();
 
-        @Override
-        public WebMarkupContainer getPanel(String panelId) {
-            log.info("GatewayHook()::DefaultConfigTab.getPanel(panelId):" + panelId);
-            return new BasicReactPanel(panelId, "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
-        }
+    // private static final IConfigTab HCE_CONFIG_ENTRY = new Elev8ConfigTab(
+    //         "HomeConnect",
+    //         "homeconnect",
+    //         "HomeConnect.nav.status.header"
+    // )
+    // {
+    //     @Override
+    //     public ConfigPanel getPanel(IConfigPage configPage) {
+    //         log.info("GatewayHook()::Elev8ConfigTab.getPanel(configPage)");
+    //         return new Elev8ConfigPanel("HomeConnect.nav.settings.title", "Install", configPage, null, "id", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
+    //     }
 
-        @Override
-        public Iterable<String> getSearchTerms(){
-            return Arrays.asList("home connect", "hce");
-        }
+    //     // Deprecated in IConfigTab
+    //     @Override
+    //     public WebMarkupContainer getPanel(String panelId) {
+    //         log.info("GatewayHook()::Elev8ConfigTab.getPanel(panelId):" + panelId);
+    //         return new BasicReactPanel(panelId, "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
+    //     }
 
-        @Override
-        public IModel<String> getTitle(){
-            return new LenientResourceModel("HomeConnect.nav.status.header", "Elev8 Install");
-        }
-    };
+    //     @Override
+    //     public Iterable<String> getSearchTerms(){
+    //         return Arrays.asList("home connect", "hce");
+    //     }
+
+    //     @Override
+    //     public IModel<String> getTitle(){
+    //         return new LenientResourceModel("HomeConnect.nav.status.header", "Elev8 Install");
+    //     }
+    // };
 
     @Override
     public List<? extends IConfigTab> getConfigPanels() {

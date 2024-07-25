@@ -54,18 +54,21 @@ import org.apache.wicket.model.StringResourceModel;
 import simpleorm.dataset.SFieldMeta;
 import simpleorm.dataset.SRecordInstance;
 import simpleorm.dataset.SRecordMeta;
+import com.inductiveautomation.ignition.gateway.web.components.RecordChoicePanel;
 
 public class HCSettingsPage extends RecordEditForm {
     private static final LoggerEx log = LogUtil.getLogger(HCSettingsPage.class.getSimpleName());
 
     public static final Pair<String, String> MENU_LOCATION =
         Pair.of(GatewayHook.CONFIG_CATEGORY.getName(), "homeconnect");
-
+        
     public HCSettingsPage(final IConfigPage configPage) {
-        super(configPage, 
-            null, 
-            new LenientResourceModel("HomeConnect.nav.settings.panelTitle"),
-            ((IgnitionWebApp) Application.get()).getContext().getPersistenceInterface().find(HCSettingsRecord.META, 0L)
+        super(
+            configPage, 
+            null,
+            new LenientResourceModel("HomeConnect.nav.settings.panelTitle", "Elev8"),
+            ((IgnitionWebApp) Application.get()).getContext().getPersistenceInterface()
+                        .find(HCSettingsRecord.META, 0L)
         );
         log.info("HCSettingsPage()::initializing");
     }
@@ -152,11 +155,11 @@ public class HCSettingsPage extends RecordEditForm {
     //     return new BasicReactPanel("react", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
     // }
 
-    @Override
-    public WebMarkupContainer createFooterComponent(String id) {
-        log.info("HCSettingsPage()::createCustomFooterComponent");
-        return new BasicReactPanel("react", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
-    }
+    // @Override
+    // public WebMarkupContainer createFooterComponent(String id) {
+    //     log.info("HCSettingsPage()::createCustomFooterComponent");
+    //     return new BasicReactPanel("react", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
+    // }
 
     @Override
     public Pair<String, String> getMenuLocation() {

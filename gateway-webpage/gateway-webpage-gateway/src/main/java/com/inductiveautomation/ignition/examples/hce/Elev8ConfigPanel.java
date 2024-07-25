@@ -13,6 +13,7 @@ import com.inductiveautomation.ignition.gateway.web.components.InvisibleContaine
 import com.inductiveautomation.ignition.gateway.web.pages.BasicReactPanel;
 import com.inductiveautomation.ignition.gateway.web.pages.IConfigPage;
 import com.inductiveautomation.ignition.gateway.web.components.react.ReactComponent;
+import org.apache.wicket.markup.html.form.TextField;
 
 public class Elev8ConfigPanel extends ConfigPanel{
     private static final LoggerEx log = LogUtil.getLogger(Elev8ConfigPanel.class.getSimpleName());
@@ -20,30 +21,29 @@ public class Elev8ConfigPanel extends ConfigPanel{
     public static final Pair<String, String> MENU_LOCATION =
         Pair.of(GatewayHook.CONFIG_CATEGORY.getName(), "homeconnect");
 
-    protected void initComponents(){
+    protected void initComponents(String jsUrl, String jsLibraryName){
         log.info("Elev8ConfigPanel()::initComponents()::initializing Elev8ConfigPanel");
+        // Form form = new Form("test-form");
+        // form.add(new Component[]{new ReactComponent("react", jsUrl, jsLibraryName)});
+        // this.add(new TextField("title"));
+        // this.add(new Component[] { form });
+        this.add(new ReactComponent("react", jsUrl, jsLibraryName));
     }
 
-    public Elev8ConfigPanel(final IConfigPage configPage) {
-        super("HomeConnect.nav.settings.title");
-        log.info("Elev8ConfigPanel()::Initializing with configPage");
-        this.initComponents();
+    public Elev8ConfigPanel(IConfigPage configPage) {
+        super("HomeConnect.nav.settings.title", "Install", configPage, null);
+        log.info("Elev8ConfigPanel()::Initializing with basic configPage constructor");
+        this.initComponents("/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
     }
 
     public Elev8ConfigPanel(String titleKey, String defaultTitle, IConfigPage configPage, ConfigPanel returnPanel, String id, String jsUrl, String jsLibraryName) {
         super(titleKey, defaultTitle, configPage, returnPanel);
         log.info("Elev8ConfigPanel()::Initializing with ReactComponent");
-        this.add(new Component[]{new ReactComponent("react", jsUrl, jsLibraryName)});
+        this.initComponents(jsUrl, jsLibraryName);
     }
 
     @Override
     public Pair<String, String> getMenuLocation() {
         return MENU_LOCATION;
     }
-    
-//     public Elev8ConfigPanel(String titleKey, String jsUrl, String jsLibraryName) {
-//       super(titleKey);
-//       this.initComponents();
-//       this.add(new Component[]{new ReactComponent("react", jsUrl, jsLibraryName)});
-//    }
 }
