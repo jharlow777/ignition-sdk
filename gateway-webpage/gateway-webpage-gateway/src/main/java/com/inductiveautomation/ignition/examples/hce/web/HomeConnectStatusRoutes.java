@@ -11,6 +11,7 @@ import com.inductiveautomation.ignition.gateway.datasource.SRConnection;
 import com.inductiveautomation.ignition.gateway.datasource.DatasourceManager;
 import com.inductiveautomation.ignition.common.Dataset;
 import com.inductiveautomation.ignition.gateway.datasource.Datasource;
+import com.inductiveautomation.ignition.gateway.dataroutes.HttpMethod;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 public class HomeConnectStatusRoutes {
 
@@ -52,6 +54,21 @@ public class HomeConnectStatusRoutes {
                 return install(req, res, req.getParameter("params"));
             })
             .type(TYPE_JSON)
+            .restrict(WicketAccessControl.STATUS_SECTION)
+            .mount();
+
+        routes.newRoute("/installFile")
+            .handler((req, res) -> {
+                try {
+                    InputStream fileStream = req.getRequest().getInputStream();
+                    return installFile(req, res, fileStream);
+                } catch (IOException e) {
+                    log.error("Error reading file stream: " + e.getMessage(), e);
+                    return new JSONObject().put("file-install-status", "error").toString();
+                }
+            })
+            .type(TYPE_JSON)
+            .method(HttpMethod.POST)
             .restrict(WicketAccessControl.STATUS_SECTION)
             .mount();
 
@@ -128,7 +145,7 @@ public class HomeConnectStatusRoutes {
             log.info("HomeConnectStatusRoutes()::installing " + feature);
 
             // Extract zip
-            extractFiles(viewsDir + "App/", feature + ".zip");
+            extractFilesFromResources(viewsDir + "App/", feature + ".zip");
 
             // Enable navigation option
             int index = 0;
@@ -168,8 +185,157 @@ public class HomeConnectStatusRoutes {
         return json;
     }
 
+    public JSONObject installFile(RequestContext requestContext, HttpServletResponse httpServletResponse, InputStream fileStream) throws SQLException, IOException, JSONException {
+        GatewayContext context = requestContext.getGatewayContext();
+        JSONObject json = new JSONObject();
+
+        // Get path to ignition installation using SDK
+        String viewsDir = context
+            .getSystemManager()
+            .getDataDir()
+            .getAbsolutePath()
+            .replace('\\','/') 
+            + "/projects/mes_ui/com.inductiveautomation.perspective/views/";
+
+        // extractFiles(file);
+        // try (ZipInputStream zis = new ZipInputStream(fileStream)) {
+        //     if (zis == null) {
+        //         log.error("HomeConnectStatusRoutes()::extractFiles()::fileStream failed to convert to zipinputstream");
+        //     } else {
+        //         log.info("Zis valid");
+        //     }
+        //     ZipEntry zipEntry = zis.getNextEntry();
+
+        //     // Iterate over each entry in the ZIP file
+        //     while (zipEntry != null) {
+        //         File newFile = new File(viewsDir + "App/", zipEntry.getName());
+        //         log.info("newFile from zipEntry: " + newFile.getAbsolutePath());
+
+        //         // Ensure parent directories exist
+        //         if (zipEntry.isDirectory()) {
+        //             log.info("Zip entry is directory: " + zipEntry.getName());
+        //             if (!newFile.isDirectory() && !newFile.mkdirs()) {
+        //                 throw new IOException("Failed to create directory " + newFile);
+        //             }
+        //         } else {
+        //             log.info("Zip entry is file: " + zipEntry.getName());
+        //             // Create parent directories if they don't exist
+        //             File parentDir = newFile.getParentFile();
+        //             if (!parentDir.isDirectory() && !parentDir.mkdirs()) {
+        //                 throw new IOException("Failed to create directory " + parentDir);
+        //             }
+
+        //             // Write file contents
+        //             try (FileOutputStream fos = new FileOutputStream(newFile)) {
+        //                 byte[] buffer = new byte[1024];
+        //                 int len;
+        //                 while ((len = zis.read(buffer)) > 0) {
+        //                     fos.write(buffer, 0, len);
+        //                 }
+        //             }
+        //             log.info("File contents successfully written");
+        //         }
+        //         zis.closeEntry();
+        //         zipEntry = zis.getNextEntry();
+        //     }
+        // } catch (Exception e) {
+        //     log.error("HomeConnectStatusRoutes()::installFile()::Error handling uploaded file: " + e.getMessage(), e);
+        //     json.put("file-install-status", "error");
+        //     return json;
+        // }
+        File tempFile;
+        try {
+            tempFile = File.createTempFile("upload-", ".txt");
+            tempFile.deleteOnExit();
+
+            try(FileOutputStream out = new FileOutputStream(viewsDir + "App/" + tempFile.getName())) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = fileStream.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
+
+                out.flush();
+            }
+            log.info("HomeConnectStatusRoutes()::installFile()::installing file " + tempFile.getAbsolutePath());
+
+            // TODO: Determine feature name from file
+            // enableNavComponent(file, 0);
+            // DatasourceManager datasourceManager = context.getDatasourceManager();
+            // SRConnection conn = datasourceManager.getConnection("MSSQL_MES");
+            // try {
+            //     int result = conn.runUpdateQuery("UPDATE config.modules SET isInstalled = 1 WHERE name = '" + feature + "'");
+            //     if(result == 1) {
+            //         log.info("HomeConnectStatusRoutes()::install()::Updated modules install status for " + feature);
+            //     } else {
+            //         log.error("HomeConnectStatusRoutes()::install()::Failed to update modules install status for " + feature);
+            //     }
+            // } catch(SQLException e) {
+            //     log.info("HomeConnectStatusRoutes()::install()::Failed to update modules install status for " + feature + " due to SQLException: " + e.getMessage());
+            // } finally {
+            //     conn.close();
+            // }
+            // triggerResourceScan(context);
+
+        } catch (IOException e) {
+            log.error("HomeConnectStatusRoutes()::installFile()::Error handling uploaded file: " + e.getMessage(), e);
+            json.put("file-install-status", "error");
+        }
+
+        json.put("file-install-status", "success");
+        log.info("HomeConnectStatusRoutes()::installFile()::json response " + json);
+        return json;
+    }
+
     // Extract files from zip to destDir overwriting existing files
-    private void extractFiles(String destDir, String zipFileName) {
+    // NOTE: requires zipFileName to be Module name
+    private void extractFiles(String destDir, File zipFile) {
+        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
+            if (zis == null) {
+                log.error("HomeConnectStatusRoutes()::extractFiles()::Zip file not found: " + zipFile.getName());
+            } else {
+                log.info("Zip file " + zipFile.getAbsolutePath() + " found");
+            }
+            // try (ZipInputStream zis = new ZipInputStream(zipStream)) {
+                ZipEntry zipEntry = zis.getNextEntry();
+                byte[] buffer = new byte[1024];
+                if(zipEntry == null) {
+                    log.info("ZipEntry started as null");
+                }
+                while (zipEntry != null) {
+                    log.info("Unzipping file: " + zipEntry.getName() + " at " + destDir);
+                    File newFile = new File(destDir, zipEntry.getName());
+
+                    if (zipEntry.isDirectory()) {
+                        if (!newFile.isDirectory() && !newFile.mkdirs()) {
+                            throw new IOException("Failed to create directory " + newFile);
+                        }
+                    } else {
+                        File parent = newFile.getParentFile();
+                        if (!parent.isDirectory() && !parent.mkdirs()) {
+                            throw new IOException("Failed to create directory " + parent);
+                        }
+
+                        try (FileOutputStream fos = new FileOutputStream(newFile)) {
+                            int len;
+                            while ((len = zis.read(buffer)) > 0) {
+                                fos.write(buffer, 0, len);
+                            }
+                        }
+                    }
+                    zis.closeEntry();
+                    zipEntry = zis.getNextEntry();
+                }
+            // } catch(Exception e) {
+            //     log.error("HomeConnectStatusRoutes()::extractFiles()::Failed to open ZipInputStream due to error: " + e.getMessage());
+            // }
+        } catch (IOException e) {
+            log.error("HomeConnectStatusRoutes()::extractFiles()::Error extracting zip file due to: " + e.getMessage(), e);
+
+        };
+    }
+
+    private void extractFilesFromResources(String destDir, String zipFileName) {
         try (InputStream zipStream = getClass().getClassLoader().getResourceAsStream(zipFileName)) {
             if (zipStream == null) {
                 log.error("Zip file not found: " + zipFileName);

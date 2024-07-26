@@ -61,7 +61,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
         @Override
         public IModel<String> getTitle(){
-            return new LenientResourceModel("HomeConnect.nav.status.header", "Elev8 Install Status");
+            return new LenientResourceModel("Invalid titleKey for testing", "Elev8 Install Status");
         }
     };
 

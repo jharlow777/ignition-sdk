@@ -6,6 +6,44 @@ const ConnectOverview = () => {
     const [features, setFeatures] = useState([]);
     const [installDisabled, setInstallDisabled] = useState(true);
     const [refreshOptions, setRefreshOptions] = useState(false);
+    const [file, setFile] = useState([])
+
+    // Handle file selection
+    const handleFileChange = (event) => {
+        // Get the selected file
+        const selectedFile = event.target.files[0];
+        if (selectedFile) {
+            setFile(selectedFile);
+        }
+    };
+
+    // Handle file upload
+    const handleFileUpload = () => {
+        if (file) {
+            // Create a FormData object to send file data
+            // const formData = new FormData();
+            // formData.append('file', file);
+            console.log('Uploading file:', file.name);
+
+            fetch(`/data/hce/installFile`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                },
+                body: file
+            })
+            .then(response => response.json())
+            .then((data) => console.log('Upload successful', data))
+            .catch((error) => console.error('Upload failed', error))
+            .then(json => {
+                console.log("install JSON Response: ");
+                console.log(json);
+            });
+        } else {
+            console.log('No file selected');
+        }
+    };
 
     // Function to fetch options
     const fetchOptions = () => {
@@ -18,9 +56,8 @@ const ConnectOverview = () => {
         })
         .then(response => response.json())
         .then(json => {
-            console.log("activeFeatures JSON Response: ");
-            console.log(json);
             if (json.availableFeatures) {
+                console.log("activeFeatures JSON Response: ");
                 console.log(json.availableFeatures);
                 const formattedOptions = json.availableFeatures.map(name => ({
                     value: name,
@@ -113,6 +150,7 @@ const ConnectOverview = () => {
 
     return (
         <div>
+            Select Module:
             <Select
                 options={options}
                 onChange={handleChange}
@@ -150,6 +188,30 @@ const ConnectOverview = () => {
             >
                 Reset
             </button>
+            <br></br>
+            or Upload module file
+            <div id="file-upload-container">
+                <input
+                    type="file"
+                    onChange={handleFileChange}
+                />
+                <button 
+                    style={{
+                        padding: '10px 20px',
+                        backgroundColor: '#2199e8',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        fontWeight: 'bold'
+                    }}
+                    onClick={handleFileUpload} 
+                >
+                    Upload File
+                </button>
+                {file && <p style={{marginTop: '10px', fontSize: '16px'}}>Selected file: {file.name}</p>}
+            </div>
         </div>
     );
 };
