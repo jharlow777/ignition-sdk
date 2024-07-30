@@ -7,11 +7,11 @@ const ConnectOverview = () => {
     const [installDisabled, setInstallDisabled] = useState(true);
     const [refreshOptions, setRefreshOptions] = useState(false);
     const [file, setFile] = useState(null);
+    const [activeTab, setActiveTab] = useState('dropdown'); // New state for active tab
     const fileInputRef = useRef(null); // Ref for the file input element
 
     // Handle file selection
     const handleFileChange = (event) => {
-        // Get the selected file
         const selectedFile = event.target.files[0];
         if (selectedFile) {
             setFile(selectedFile);
@@ -21,12 +21,9 @@ const ConnectOverview = () => {
     // Handle file upload with useCallback to avoid re-creation on every render
     const handleFileUpload = useCallback(() => {
         if (file) {
-            // Generate confirmation message
             const confirmationMessage = `Are you sure you want to install the file "${file.name}"?`;
 
-            // Display confirmation dialog
             if (window.confirm(confirmationMessage)) {
-                // Proceed with file upload
                 console.log('Uploading file:', file.name);
 
                 fetch(`/data/hce/installFile`, {
@@ -74,8 +71,6 @@ const ConnectOverview = () => {
         .then(response => response.json())
         .then(json => {
             if (json.availableFeatures) {
-                console.log("activeFeatures JSON Response: ");
-                console.log(json.availableFeatures);
                 const formattedOptions = json.availableFeatures.map(name => ({
                     value: name,
                     label: name
@@ -83,7 +78,6 @@ const ConnectOverview = () => {
 
                 setOptions(formattedOptions);
 
-                // Disable the Install button if there are no options available
                 setInstallDisabled(formattedOptions.length === 0);
             } else {
                 throw new Error("Invalid features array retrieved from config.modules");
@@ -95,21 +89,16 @@ const ConnectOverview = () => {
     };
 
     useEffect(() => {
-        // Fetch options when the component mounts or when refreshOptions changes
         fetchOptions();
     }, [refreshOptions]);
 
     const handleChange = (selectedFeatures) => {
         setFeatures(selectedFeatures || []);
-        setInstallDisabled(selectedFeatures.length === 0); // Update button state based on selectedFeatures
+        setInstallDisabled(selectedFeatures.length === 0);
     };
 
     const install = () => {
-        console.log("Selected features: ");
         let params = features.map((a) => a.value);
-        console.log(params);
-
-        // Convert params array to a query string
         let queryString = `?params=${params.join(',')}`;
 
         fetch(`/data/hce/install/${queryString}`, {
@@ -126,7 +115,7 @@ const ConnectOverview = () => {
         });
 
         setFeatures([]);
-        setRefreshOptions(prev => !prev); // Toggle refreshOptions to retrigger fetchOptions
+        setRefreshOptions(prev => !prev);
     };
 
     const resetFeatures = () => {
@@ -138,25 +127,21 @@ const ConnectOverview = () => {
             }
         });
         window.location.reload();
-    }
+    };
 
     const showConfirmation = () => {
-        console.log("Install clicked");
-
-        // Generate confirmation message
         let confirmationMessage = "Are you sure you want to install ";
         if (features.length === 1) {
             confirmationMessage += `${features[0].label}?`;
         } else if (features.length > 1) {
             const featureLabels = features.map(feature => feature.label);
-            const lastFeature = featureLabels.pop(); // Remove last element from array
+            const lastFeature = featureLabels.pop();
 
             confirmationMessage += featureLabels.join(', ') + ` and ${lastFeature}?`;
         } else {
             confirmationMessage += "these features?";
         }
 
-        // Display confirmation dialog
         if (window.confirm(confirmationMessage)) {
             install();
             alert("Installed");
@@ -167,68 +152,109 @@ const ConnectOverview = () => {
 
     return (
         <div>
-            Select Module:
-            <Select
-                options={options}
-                onChange={handleChange}
-                value={features}
-                isMulti
-            />
-            <button
-                style={{
-                    padding: '10px 20px',
-                    backgroundColor: installDisabled ? '#cccccc' : '#2199e8', // Grey if disabled
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '5px',
-                    cursor: installDisabled ? 'not-allowed' : 'pointer', // Change cursor if disabled
-                    fontSize: '16px',
-                    fontWeight: 'bold'
-                }}
-                onClick={showConfirmation}
-                disabled={installDisabled} // Disable button when features are empty
-            >
-                Install
-            </button>
-            <button
-                style={{
-                    padding: '10px 20px',
-                    backgroundColor: '#2199e8',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '5px',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    fontWeight: 'bold'
-                }}
-                onClick={resetFeatures}
-            >
-                Reset
-            </button>
-            or Upload module file
-            <div id="file-upload-container">
-                <input
-                    type="file"
-                    ref={fileInputRef} // Attach ref to file input
-                    onChange={handleFileChange}
-                />
-                <button 
+            <div style={{ marginBottom: '20px' }}>
+                <button
                     style={{
-                        padding: '10px 20px',
-                        backgroundColor: '#2199e8',
-                        color: 'white',
+                        marginRight: '10px',
+                        padding: '10px',
+                        cursor: 'pointer',
+                        backgroundColor: activeTab === 'dropdown' ? '#2199e8' : '#e0e0e0',
+                        color: activeTab === 'dropdown' ? 'white' : 'black',
                         border: 'none',
                         borderRadius: '5px',
-                        cursor: 'pointer',
                         fontSize: '16px',
                         fontWeight: 'bold'
                     }}
-                    onClick={handleFileUpload} 
+                    onClick={() => setActiveTab('dropdown')}
                 >
-                    Upload File
+                    Dropdown Selection
                 </button>
-                {file && <p style={{marginTop: '10px', fontSize: '16px'}}>Selected file: {file.name}</p>}
+                <button
+                    style={{
+                        padding: '10px',
+                        cursor: 'pointer',
+                        backgroundColor: activeTab === 'upload' ? '#2199e8' : '#e0e0e0',
+                        color: activeTab === 'upload' ? 'white' : 'black',
+                        border: 'none',
+                        borderRadius: '5px',
+                        fontSize: '16px',
+                        fontWeight: 'bold'
+                    }}
+                    onClick={() => setActiveTab('upload')}
+                >
+                    File Upload
+                </button>
             </div>
+
+            {activeTab === 'dropdown' && (
+                <div>
+                    <h2>Select Module</h2>
+                    <Select
+                        options={options}
+                        onChange={handleChange}
+                        value={features}
+                        isMulti
+                    />
+                    <button
+                        style={{
+                            padding: '10px 20px',
+                            backgroundColor: installDisabled ? '#cccccc' : '#2199e8',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '5px',
+                            cursor: installDisabled ? 'not-allowed' : 'pointer',
+                            fontSize: '16px',
+                            fontWeight: 'bold'
+                        }}
+                        onClick={showConfirmation}
+                        disabled={installDisabled}
+                    >
+                        Install
+                    </button>
+                    <button
+                        style={{
+                            padding: '10px 20px',
+                            backgroundColor: '#2199e8',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '5px',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            fontWeight: 'bold'
+                        }}
+                        onClick={resetFeatures}
+                    >
+                        Reset
+                    </button>
+                </div>
+            )}
+
+            {activeTab === 'upload' && (
+                <div>
+                    <h2>Upload Module File</h2>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                    />
+                    <button 
+                        style={{
+                            padding: '10px 20px',
+                            backgroundColor: '#2199e8',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '5px',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            fontWeight: 'bold'
+                        }}
+                        onClick={handleFileUpload}
+                    >
+                        Upload File
+                    </button>
+                    {file && <p style={{ marginTop: '10px', fontSize: '16px' }}>Selected file: {file.name}</p>}
+                </div>
+            )}
         </div>
     );
 };

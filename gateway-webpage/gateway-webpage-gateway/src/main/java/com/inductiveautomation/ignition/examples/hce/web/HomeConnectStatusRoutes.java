@@ -220,29 +220,24 @@ public class HomeConnectStatusRoutes {
         json.put("file-install-complete", 
             extractFilesFromInputStream(viewsDir, fileStream));
 
-            // TODO: Determine feature name from file
-            // enableNavComponent(file, 0);
-            // DatasourceManager datasourceManager = context.getDatasourceManager();
-            // SRConnection conn = datasourceManager.getConnection("MSSQL_MES");
-            // try {
-            //     int result = conn.runUpdateQuery("UPDATE config.modules SET isInstalled = 1 WHERE name = '" + feature + "'");
-            //     if(result == 1) {
-            //         log.info("HomeConnectStatusRoutes()::install()::Updated modules install status for " + feature);
-            //     } else {
-            //         log.error("HomeConnectStatusRoutes()::install()::Failed to update modules install status for " + feature);
-            //     }
-            // } catch(SQLException e) {
-            //     log.info("HomeConnectStatusRoutes()::install()::Failed to update modules install status for " + feature + " due to SQLException: " + e.getMessage());
-            // } finally {
-            //     conn.close();
-            // }
+        // TODO: Determine feature name from file
+        // enableNavComponent(file, 0);
+        // DatasourceManager datasourceManager = context.getDatasourceManager();
+        // SRConnection conn = datasourceManager.getConnection("MSSQL_MES");
+        // try {
+        //     int result = conn.runUpdateQuery("UPDATE config.modules SET isInstalled = 1 WHERE name = '" + feature + "'");
+        //     if(result == 1) {
+        //         log.info("HomeConnectStatusRoutes()::install()::Updated modules install status for " + feature);
+        //     } else {
+        //         log.error("HomeConnectStatusRoutes()::install()::Failed to update modules install status for " + feature);
+        //     }
+        // } catch(SQLException e) {
+        //     log.info("HomeConnectStatusRoutes()::install()::Failed to update modules install status for " + feature + " due to SQLException: " + e.getMessage());
+        // } finally {
+        //     conn.close();
+        // }
         json.put("resource-scan-complete", 
             triggerResourceScan(context));
-
-        // } catch (IOException e) {
-        //     log.error("HomeConnectStatusRoutes()::installFile()::Error handling uploaded file: " + e.getMessage(), e);
-        //     json.put("file-install-status", "error");
-        // }
 
         log.info("HomeConnectStatusRoutes()::installFile()::json response " + json);
         return json;
