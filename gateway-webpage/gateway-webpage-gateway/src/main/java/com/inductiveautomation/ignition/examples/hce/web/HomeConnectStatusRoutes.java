@@ -62,11 +62,12 @@ public class HomeConnectStatusRoutes {
                 .restrict(WicketAccessControl.STATUS_SECTION)
                 .mount();
 
-            routes.newRoute("/installFile")
+            routes.newRoute("/installFile/:filename")
                 .handler((req, res) -> {
                     try {
+                        String filename = req.getParameter("filename");
                         InputStream fileStream = req.getRequest().getInputStream();
-                        return installFile(req, res, fileStream);
+                        return installFile(req, res, fileStream, filename);
                     } catch (IOException e) {
                         log.error("Error reading file stream: " + e.getMessage(), e);
                         return new JSONObject().put("file-install-status", "error").toString();
@@ -161,25 +162,9 @@ public class HomeConnectStatusRoutes {
             }
 
             // Enable navigation option
-            int index = 0;
-            switch(feature) {
-                case "TrackAndTrace":
-                    index = 2;
-                    break;
-                case "Quality":
-                    index = 7;
-                    break;
-                case "DocumentManager":
-                    index = 8;
-                    break;
-                default:
-                    log.error("HomeConnectStatusRoutes()::install()::Undefined nav menu item: " + feature);
-                    break;
-            }
-
             try{
                 json.put("nav-component-enabled", 
-                    enableNavComponent(viewsDir + "GlobalComponents/Navigation/NavComponent/view.json", index));
+                    enableNavComponent(viewsDir + "GlobalComponents/Navigation/NavComponent/view.json", feature));
             } catch(JSONException e) {
                 log.error("HomeConnectStatusRoutes()::install()::Failed to update json response object for enableNavComponent due to error: " + e.getMessage());
             }
@@ -205,9 +190,26 @@ public class HomeConnectStatusRoutes {
         return json;
     }
 
-    public JSONObject installFile(RequestContext requestContext, HttpServletResponse httpServletResponse, InputStream fileStream) throws SQLException, IOException, JSONException {
+    public JSONObject installFile(RequestContext requestContext, HttpServletResponse httpServletResponse, InputStream fileStream, String fileName) throws SQLException, IOException, JSONException {
         GatewayContext context = requestContext.getGatewayContext();
         JSONObject json = new JSONObject();
+
+        // Strip extension from fileName
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
+            fileName = fileName.substring(0, lastDotIndex);
+        }
+
+        final List<String> ACCEPTED_FILENAMES = Arrays.asList(
+        "TrackAndTrace",
+            "Quality",
+            "DocumentManager"
+        );
+        if (!ACCEPTED_FILENAMES.contains(fileName)) {
+            log.error("HomeConnectStatusRoutes()::installFile()::Filename invalid: " + fileName);
+            json.put("file-install-failure", "invalid file name " + fileName);
+            return json;
+        }
 
         // Get path to ignition installation using SDK
         String viewsDir = context
@@ -215,13 +217,17 @@ public class HomeConnectStatusRoutes {
             .getDataDir()
             .getAbsolutePath()
             .replace('\\','/') 
-            + "/projects/mes_ui/com.inductiveautomation.perspective/views/App/";
+            + "/projects/mes_ui/com.inductiveautomation.perspective/views/";
 
         json.put("file-install-complete", 
-            extractFilesFromInputStream(viewsDir, fileStream));
+            extractFilesFromInputStream(viewsDir + "App/", fileStream));
 
-        // TODO: Determine feature name from file
-        // enableNavComponent(file, 0);
+        try{
+            json.put("nav-component-enabled", 
+                enableNavComponent(viewsDir + "GlobalComponents/Navigation/NavComponent/view.json", fileName));
+        } catch (JSONException e) {
+            log.error("HomeConnectStatusRoutes()::installFile()::Failed to update json response object for enableNavComponent due to error: " + e.getMessage());
+        }
         // DatasourceManager datasourceManager = context.getDatasourceManager();
         // SRConnection conn = datasourceManager.getConnection("MSSQL_MES");
         // try {
@@ -298,8 +304,25 @@ public class HomeConnectStatusRoutes {
     }
 
     // Enable nav menu item at index
-    private boolean enableNavComponent(String navJsonPath, int index) {
+    private boolean enableNavComponent(String navJsonPath, String feature) {
         boolean success = false;
+
+        int index = 0;
+        switch(feature) {
+            case "TrackAndTrace":
+                index = 2;
+                break;
+            case "Quality":
+                index = 7;
+                break;
+            case "DocumentManager":
+                index = 8;
+                break;
+            default:
+                log.error("HomeConnectStatusRoutes()::install()::Undefined nav menu item: " + feature);
+                return success;
+        }
+
         File f = new File(navJsonPath);
         if (f.exists()){
             try {

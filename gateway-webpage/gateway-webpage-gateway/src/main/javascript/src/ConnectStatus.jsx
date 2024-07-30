@@ -26,7 +26,7 @@ const ConnectOverview = () => {
             if (window.confirm(confirmationMessage)) {
                 console.log('Uploading file:', file.name);
 
-                fetch(`/data/hce/installFile`, {
+                fetch(`/data/hce/installFile/${encodeURIComponent(file.name)}`, {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: {
