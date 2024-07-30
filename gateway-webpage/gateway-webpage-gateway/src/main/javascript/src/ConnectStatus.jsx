@@ -37,7 +37,7 @@ const ConnectOverview = () => {
                 .then(response => response.json())
                 .then((data) => {
                     console.log('Upload successful', data);
-                    alert("File uploaded successfully");
+                    alert("File installed successfully");
                     setFile(null);
                     if (fileInputRef.current) {
                         fileInputRef.current.value = ''; // Clear the file input value

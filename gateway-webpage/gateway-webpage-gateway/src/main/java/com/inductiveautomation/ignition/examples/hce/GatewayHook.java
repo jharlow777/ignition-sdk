@@ -132,71 +132,69 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     public void setup(GatewayContext gatewayContext) {
         this.context = gatewayContext;
 
-        log.debug("Beginning setup of HomeConnect Module");
-
         // Register GatewayHook.properties by registering the GatewayHook.class with BundleUtils
         BundleUtil.get().addBundle("HomeConnect", getClass(), "HomeConnect");
 
         //Verify tables for persistent records if necessary
-        verifySchema(context);
+        // verifySchema(context);
 
         // create records if needed
-        maybeCreateHCSettings(context);
+        // maybeCreateHCSettings(context);
 
         // get the settings record and do something with it...
         // HCSettingsRecord theOneRecord = context.getLocalPersistenceInterface().find(HCSettingsRecord.META, 0L);
 
         // listen for updates to the settings record...
-        HCSettingsRecord.META.addRecordListener(new IRecordListener<HCSettingsRecord>() {
-            @Override
-            public void recordUpdated(HCSettingsRecord hcSettingsRecord) {
-                log.info("recordUpdated()");
-            }
+        // HCSettingsRecord.META.addRecordListener(new IRecordListener<HCSettingsRecord>() {
+        //     @Override
+        //     public void recordUpdated(HCSettingsRecord hcSettingsRecord) {
+        //         log.info("recordUpdated()");
+        //     }
 
-            @Override
-            public void recordAdded(HCSettingsRecord hcSettingsRecord) {
-                log.info("recordAdded()");
-            }
+        //     @Override
+        //     public void recordAdded(HCSettingsRecord hcSettingsRecord) {
+        //         log.info("recordAdded()");
+        //     }
 
-            @Override
-            public void recordDeleted(KeyValue keyValue) {
-                log.info("recordDeleted()");
-            }
-        });
+        //     @Override
+        //     public void recordDeleted(KeyValue keyValue) {
+        //         log.info("recordDeleted()");
+        //     }
+        // });
 
-        log.debug("GatewayHook()::Setup Complete.");
+        log.debug("GatewayHook Setup Complete.");
     }
 
-    private void verifySchema(GatewayContext context) {
-        try {
-            context.getSchemaUpdater().updatePersistentRecords(HCSettingsRecord.META);
-        } catch (SQLException e) {
-            log.error("Error verifying persistent record schemas for HomeConnect records.", e);
-        }
-    }
+    // private void verifySchema(GatewayContext context) {
+    //     try {
+    //         context.getSchemaUpdater().updatePersistentRecords(HCSettingsRecord.META);
+    //     } catch (SQLException e) {
+    //         log.error("Error verifying persistent record schemas for HomeConnect records.", e);
+    //     }
+    // }
 
-    public void maybeCreateHCSettings(GatewayContext context) {
-        log.trace("Attempting to create HomeConnect Settings Record");
-        try {
-            HCSettingsRecord settingsRecord = context.getLocalPersistenceInterface().createNew(HCSettingsRecord.META);
-            settingsRecord.setId(0L);
-            settingsRecord.setHCIPAddress("192.168.1.99");
-            settingsRecord.setHCHubName("HomeConnect Hub");
-            settingsRecord.setHCPowerOutput(23);
-            settingsRecord.setHCDeviceCount(15);
-            settingsRecord.setBroadcastSSID(false);
+    // public void maybeCreateHCSettings(GatewayContext context) {
+    //     log.trace("Attempting to create HomeConnect Settings Record");
+    //     try {
+    //         HCSettingsRecord settingsRecord = context.getLocalPersistenceInterface().createNew(HCSettingsRecord.META);
+    //         settingsRecord.setId(0L);
+    //         settingsRecord.setHCIPAddress("192.168.1.99");
+    //         settingsRecord.setHCHubName("HomeConnect Hub");
+    //         settingsRecord.setHCPowerOutput(23);
+    //         settingsRecord.setHCDeviceCount(15);
+    //         settingsRecord.setBroadcastSSID(false);
 
-            /*
-			 * This doesn't override existing settings, only replaces it with these if we didn't
-			 * exist already.
-			 */
-            context.getSchemaUpdater().ensureRecordExists(settingsRecord);
-        } catch (Exception e) {
-            log.error("Failed to establish HCSettings Record exists", e);
-        }
+    //         /*
+	// 		 * This doesn't override existing settings, only replaces it with these if we didn't
+	// 		 * exist already.
+	// 		 */
+    //         context.getSchemaUpdater().ensureRecordExists(settingsRecord);
+    //     } catch (Exception e) {
+    //         log.error("Failed to establish HCSettings Record exists", e);
+    //     }
 
-        log.trace("HomeConnect Settings Record Established");
-    }
+    //     log.trace("HomeConnect Settings Record Established");
+    // }
 
 
     @Override

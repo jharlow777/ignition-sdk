@@ -52,6 +52,7 @@ public class HomeConnectStatusRoutes {
     }
 
     public void mountRoutes() {
+        final String METHOD_NAME = "mountRoutes()::";
         if (!routesMounted) {
 
             routes.newRoute("/install")
@@ -69,7 +70,7 @@ public class HomeConnectStatusRoutes {
                         InputStream fileStream = req.getRequest().getInputStream();
                         return installFile(req, res, fileStream, filename);
                     } catch (IOException e) {
-                        log.error("Error reading file stream: " + e.getMessage(), e);
+                        log.error(METHOD_NAME + "Error reading file stream: " + e.getMessage(), e);
                         return new JSONObject().put("file-install-status", "error").toString();
                     }
                 })
@@ -100,6 +101,7 @@ public class HomeConnectStatusRoutes {
 
     // FOR TESTING: Reset all modules' install status
     public JSONObject resetInstallStatus(RequestContext requestContext) throws SQLException {
+        final String METHOD_NAME = "resetInstallStatus()::";
         SRConnection conn = null;
         try {
             GatewayContext context = requestContext.getGatewayContext();
@@ -107,7 +109,7 @@ public class HomeConnectStatusRoutes {
             conn = datasourceManager.getConnection("MSSQL_MES");
             conn.runUpdateQuery("UPDATE config.modules SET isInstalled = 0");
         } catch(SQLException e) {
-            log.info("HomeConnectStatusRoutes()::resetInstallStatus()::Failed to update due to SQLException: " + e.getMessage());
+            log.info(METHOD_NAME + "Failed to update due to SQLException: " + e.getMessage());
         } finally {
             conn.close();
         }
@@ -115,6 +117,7 @@ public class HomeConnectStatusRoutes {
     }
 
     public JSONObject retrieveAvailableFeatures(RequestContext requestContext, HttpServletResponse httpServletResponse) throws SQLException, JSONException {
+        final String METHOD_NAME = "retrieveAvailableFeatures()::";
         JSONObject json = new JSONObject();
         SRConnection conn = null;
         try {
@@ -126,7 +129,7 @@ public class HomeConnectStatusRoutes {
             List<Object> features = result.getColumnAsList(0);
             json.put("availableFeatures", features);
         } catch(SQLException e) {
-            log.error("HomeConnectStatusRoutes()::retrieveFeatures()::SQLException " + e.getMessage());
+            log.error(METHOD_NAME + "SQLException " + e.getMessage());
         } finally {
             conn.close();
         }
@@ -134,10 +137,11 @@ public class HomeConnectStatusRoutes {
     }
 
     public JSONObject install(RequestContext requestContext, HttpServletResponse httpServletResponse, String params) throws SQLException, JSONException {
+        final String METHOD_NAME = "install()::";
         GatewayContext context = requestContext.getGatewayContext();
         JSONObject json = new JSONObject();
         json.put("selected-features", params);
-        log.info("HomeConnectStatusRoutes()::selected-features " + params);
+        log.info(METHOD_NAME + "selected-features " + params);
 
         // Get path to ignition installation using SDK
         String viewsDir = context
@@ -151,33 +155,44 @@ public class HomeConnectStatusRoutes {
         DatasourceManager datasourceManager = context.getDatasourceManager();
         SRConnection conn = datasourceManager.getConnection("MSSQL_MES");
         features.forEach(feature -> {
-            log.info("HomeConnectStatusRoutes()::installing " + feature);
+            log.info(METHOD_NAME + "installing " + feature);
 
             // Extract zip
             try {
                 json.put("install-complete", 
                     extractFilesFromInputStream(viewsDir + "App/", getClass().getClassLoader().getResourceAsStream(feature + ".zip")));
             } catch(JSONException e) {
-                log.error("HomeConnectStatusRoutes()::install()::Failed to update json response object for extractFilesFromInputStream due to error: " + e.getMessage());
+                log.error(METHOD_NAME + "Failed to update json response object for extractFilesFromInputStream due to error: " + e.getMessage());
             }
 
             // Enable navigation option
-            try{
+            try {
                 json.put("nav-component-enabled", 
                     enableNavComponent(viewsDir + "GlobalComponents/Navigation/NavComponent/view.json", feature));
             } catch(JSONException e) {
-                log.error("HomeConnectStatusRoutes()::install()::Failed to update json response object for enableNavComponent due to error: " + e.getMessage());
+                log.error(METHOD_NAME + "Failed to update json response object for enableNavComponent due to error: " + e.getMessage());
+            }
+
+            try {
+                json.put("db-status-update", false);
+            } catch(JSONException je) {
+                log.error(METHOD_NAME + "Failed to update json response object for dbStatusUpdate due to error: " + je.getMessage());
             }
 
             try {
                 int result = conn.runUpdateQuery("UPDATE config.modules SET isInstalled = 1 WHERE name = '" + feature + "'");
                 if(result == 1) {
-                    log.info("HomeConnectStatusRoutes()::install()::Updated modules install status for " + feature);
+                    log.info(METHOD_NAME + "Updated modules install status for " + feature);
+                    try {
+                        json.put("db-status-update", true);
+                    } catch(JSONException e) {
+                        log.error(METHOD_NAME + "Failed to update json response object for dbStatusUpdate due to error: " + e.getMessage());
+                    }
                 } else {
-                    log.error("HomeConnectStatusRoutes()::install()::Failed to update modules install status for " + feature);
+                    log.error(METHOD_NAME + "Failed to update modules install status for " + feature);
                 }
             } catch(SQLException e) {
-                log.info("HomeConnectStatusRoutes()::install()::Failed to update modules install status for " + feature + " due to SQLException: " + e.getMessage());
+                log.info(METHOD_NAME + "Failed to update modules install status for " + feature + " due to SQLException: " + e.getMessage());
             }
         });
         conn.close();
@@ -186,11 +201,12 @@ public class HomeConnectStatusRoutes {
         json.put("resource-scan-complete", 
             triggerResourceScan(context));
 
-        log.info("HomeConnectStatusRoutes()::install()::json response " + json);
+        log.info(METHOD_NAME + "json response " + json);
         return json;
     }
 
     public JSONObject installFile(RequestContext requestContext, HttpServletResponse httpServletResponse, InputStream fileStream, String fileName) throws SQLException, IOException, JSONException {
+        final String METHOD_NAME = "installFile()::";
         GatewayContext context = requestContext.getGatewayContext();
         JSONObject json = new JSONObject();
 
@@ -206,7 +222,7 @@ public class HomeConnectStatusRoutes {
             "DocumentManager"
         );
         if (!ACCEPTED_FILENAMES.contains(fileName)) {
-            log.error("HomeConnectStatusRoutes()::installFile()::Filename invalid: " + fileName);
+            log.error(METHOD_NAME + "Filename invalid: " + fileName);
             json.put("file-install-failure", "invalid file name " + fileName);
             return json;
         }
@@ -222,42 +238,45 @@ public class HomeConnectStatusRoutes {
         json.put("file-install-complete", 
             extractFilesFromInputStream(viewsDir + "App/", fileStream));
 
-        try{
+        try {
             json.put("nav-component-enabled", 
                 enableNavComponent(viewsDir + "GlobalComponents/Navigation/NavComponent/view.json", fileName));
         } catch (JSONException e) {
-            log.error("HomeConnectStatusRoutes()::installFile()::Failed to update json response object for enableNavComponent due to error: " + e.getMessage());
+            log.error(METHOD_NAME + "Failed to update json response object for enableNavComponent due to error: " + e.getMessage());
         }
-        // DatasourceManager datasourceManager = context.getDatasourceManager();
-        // SRConnection conn = datasourceManager.getConnection("MSSQL_MES");
-        // try {
-        //     int result = conn.runUpdateQuery("UPDATE config.modules SET isInstalled = 1 WHERE name = '" + feature + "'");
-        //     if(result == 1) {
-        //         log.info("HomeConnectStatusRoutes()::install()::Updated modules install status for " + feature);
-        //     } else {
-        //         log.error("HomeConnectStatusRoutes()::install()::Failed to update modules install status for " + feature);
-        //     }
-        // } catch(SQLException e) {
-        //     log.info("HomeConnectStatusRoutes()::install()::Failed to update modules install status for " + feature + " due to SQLException: " + e.getMessage());
-        // } finally {
-        //     conn.close();
-        // }
+        DatasourceManager datasourceManager = context.getDatasourceManager();
+        SRConnection conn = datasourceManager.getConnection("MSSQL_MES");
+        json.put("db-status-update", false);
+        try {
+            int result = conn.runUpdateQuery("UPDATE config.modules SET isInstalled = 1 WHERE name = '" + fileName + "'");
+            if(result == 1) {
+                log.info(METHOD_NAME + "Updated modules install status for " + fileName);
+                json.put("db-status-update", true);
+            } else {
+                log.error(METHOD_NAME + "Failed to update modules install status for " + fileName);
+            }
+        } catch(SQLException e) {
+            log.info(METHOD_NAME + "Failed to update modules install status for " + fileName + " due to SQLException: " + e.getMessage());
+        } finally {
+            conn.close();
+        }
         json.put("resource-scan-complete", 
             triggerResourceScan(context));
 
-        log.info("HomeConnectStatusRoutes()::installFile()::json response " + json);
+        log.info(METHOD_NAME + "json response " + json);
         return json;
     }
 
     // Extract files from zip to destDir overwriting existing files
     private boolean extractFilesFromInputStream(String destDir, InputStream fileStream) {
+        final String METHOD_NAME = "extractFilesFromInputStream()::";
         boolean success = false;
         try (ZipInputStream zis = new ZipInputStream(fileStream)) {
             ZipEntry zipEntry = zis.getNextEntry();
             byte[] buffer = new byte[1024];
 
             if(zipEntry == null) {
-                log.info("HomeConnectStatusRoutes()::extractFilesFromUpload()::Source file invalid, zipEntry null");
+                log.info(METHOD_NAME + "Source file invalid, zipEntry null");
             }
             while (zipEntry != null) {
                 File newFile = new File(destDir, zipEntry.getName());
@@ -283,28 +302,31 @@ public class HomeConnectStatusRoutes {
                 zipEntry = zis.getNextEntry();
             }
             success = true;
+            log.info(METHOD_NAME + "Successfully extracted and installed source files");
         } catch(IOException e) {
-            log.error("HomeConnectStatusRoutes()::extractFilesFromUpload()::Failed to extract files due to error: " + e.getMessage());
+            log.error(METHOD_NAME + "Failed to extract files due to error: " + e.getMessage());
         }
         return success;
     }
 
     // Trigger Project Resource Scan to immediately update
     private boolean triggerResourceScan(GatewayContext context) {
+        final String METHOD_NAME = "triggerResourceScan()::";
         boolean success = false;
         try {
             ProjectManager projectManager = context.getProjectManager();
             projectManager.requestScan();
-            log.info("HomeConnectStatusRoutes()::Successfully triggered resource scan");
+            log.info(METHOD_NAME + "Successfully triggered resource scan");
             success = true;
         } catch (Exception e) {
-            log.error("HomeConnectStatusRoutes()::Failed to trigger resource scan: " + e.getMessage(), e);
+            log.error(METHOD_NAME + "Failed to trigger resource scan: " + e.getMessage(), e);
         }
         return success;
     }
 
-    // Enable nav menu item at index
+    // Enable nav menu item for feature
     private boolean enableNavComponent(String navJsonPath, String feature) {
+        final String METHOD_NAME = "enableNavComponent()::";
         boolean success = false;
 
         int index = 0;
@@ -319,7 +341,7 @@ public class HomeConnectStatusRoutes {
                 index = 8;
                 break;
             default:
-                log.error("HomeConnectStatusRoutes()::install()::Undefined nav menu item: " + feature);
+                log.error(METHOD_NAME + "Undefined nav menu item: " + feature);
                 return success;
         }
 
@@ -343,13 +365,13 @@ public class HomeConnectStatusRoutes {
                 Path path = Paths.get(navJsonPath);
                 byte[] strToBytes = JSONObject.valueToString(json).getBytes();
                 Files.write(path, strToBytes);
-                log.info("HomeConnectStatusRoutes()::Successfully enabled nav menu item");
+                log.info(METHOD_NAME + "Successfully enabled nav menu item");
                 success = true;
             } catch(Exception e) {
-                log.error("HomeConnectStatusRoutes()::Failed to parse NavComponent's view.json with error: " + e.getMessage());
+                log.error(METHOD_NAME + "Failed to parse NavComponent's view.json with error: " + e.getMessage());
             }
         } else {
-            log.error("HomeConnectStatusRoutes()::Failed to find nav menu file");
+            log.error(METHOD_NAME + "Failed to find nav menu file");
         }
         return success;
     }
