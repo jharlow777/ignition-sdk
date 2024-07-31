@@ -16,6 +16,8 @@ import com.inductiveautomation.ignition.gateway.dataroutes.HttpMethod;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.apache.commons.io.IOUtils;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 
 import java.sql.SQLException;
 
@@ -157,10 +159,14 @@ public class HomeConnectStatusRoutes {
         features.forEach(feature -> {
             log.info(METHOD_NAME + "installing " + feature);
 
+            // Update to latest version if git is available
+            // TODO: determine target repo
+            // gitPull(feature);
+
             // Extract zip
             try {
                 json.put("install-complete", 
-                    extractFilesFromInputStream(viewsDir + "App/", getClass().getClassLoader().getResourceAsStream(feature + ".zip")));
+                    extractFilesFromInputStream(viewsDir + "App/", getClass().getClassLoader().getResourceAsStream("mounted/project-resources/" + feature + ".zip")));
             } catch(JSONException e) {
                 log.error(METHOD_NAME + "Failed to update json response object for extractFilesFromInputStream due to error: " + e.getMessage());
             }
@@ -216,17 +222,6 @@ public class HomeConnectStatusRoutes {
             fileName = fileName.substring(0, lastDotIndex);
         }
 
-        final List<String> ACCEPTED_FILENAMES = Arrays.asList(
-        "TrackAndTrace",
-            "Quality",
-            "DocumentManager"
-        );
-        if (!ACCEPTED_FILENAMES.contains(fileName)) {
-            log.error(METHOD_NAME + "Filename invalid: " + fileName);
-            json.put("file-install-failure", "invalid file name " + fileName);
-            return json;
-        }
-
         // Get path to ignition installation using SDK
         String viewsDir = context
             .getSystemManager()
@@ -270,6 +265,9 @@ public class HomeConnectStatusRoutes {
     // Extract files from zip to destDir overwriting existing files
     private boolean extractFilesFromInputStream(String destDir, InputStream fileStream) {
         final String METHOD_NAME = "extractFilesFromInputStream()::";
+        if(fileStream == null) {
+            log.error(METHOD_NAME + "InputStream fileStream is null");
+        }
         boolean success = false;
         try (ZipInputStream zis = new ZipInputStream(fileStream)) {
             ZipEntry zipEntry = zis.getNextEntry();
@@ -372,6 +370,49 @@ public class HomeConnectStatusRoutes {
             }
         } else {
             log.error(METHOD_NAME + "Failed to find nav menu file");
+        }
+        return success;
+    }
+
+    private boolean gitPull(String feature) {
+        final String METHOD_NAME = "gitPull()::";
+        boolean success = false;
+        String repoUrl = "https://github.com/your/repo.git";
+        String branchName = "main";
+        String filePathInRepo = "path/to/your/file.txt";
+        String localRepoDir = "path/to/local/repo";
+        String resourcesDir = "path/to/resources/dir";
+
+        try {
+            // Clone the repository if it doesn't exist locally
+            File repoDir = new File(localRepoDir);
+            if (!repoDir.exists()) {
+                log.info(METHOD_NAME + "Cloning repository");
+                Git.cloneRepository()
+                    .setURI(repoUrl)
+                    .setDirectory(repoDir)
+                    .call();
+            } else {
+                log.info(METHOD_NAME + "Repository already cloned. Pulling latest changes");
+                try (Git git = Git.open(repoDir)) {
+                    git.pull().call();
+                }
+            }
+
+            // Get the latest version of the file from the repository
+            File fileInRepo = new File(repoDir, filePathInRepo);
+            File targetFile = new File(resourcesDir, "file.txt");
+
+            if (!fileInRepo.exists()) {
+                throw new IOException("File does not exist in the repository.");
+            }
+
+            // Copy the file from the repository to the resources directory
+            Files.copy(fileInRepo.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            log.info(METHOD_NAME + "Git File updated successfully.");
+            success = true;
+        } catch (IOException | GitAPIException e) {
+            log.error(METHOD_NAME + "Failed to update file from Git due to error: " + e.getMessage());
         }
         return success;
     }

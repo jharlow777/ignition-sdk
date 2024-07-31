@@ -7,14 +7,35 @@ const ConnectOverview = () => {
     const [installDisabled, setInstallDisabled] = useState(true);
     const [refreshOptions, setRefreshOptions] = useState(false);
     const [file, setFile] = useState(null);
-    const [activeTab, setActiveTab] = useState('dropdown'); // New state for active tab
+    const [activeTab, setActiveTab] = useState('dropdown');
+    const [warningMessage, setWarningMessage] = useState('');
     const fileInputRef = useRef(null); // Ref for the file input element
+
+    // Accepted file names and types
+    const acceptedFileNames = ['TrackAndTrace.zip', 'Quality.zip', 'DocumentManager.zip'];
+    const acceptedFileType = 'application/zip';
 
     // Handle file selection
     const handleFileChange = (event) => {
         const selectedFile = event.target.files[0];
         if (selectedFile) {
-            setFile(selectedFile);
+            const isValidType = selectedFile.type === acceptedFileType;
+            const isValidName = acceptedFileNames.includes(selectedFile.name);
+
+            if (isValidType && isValidName) {
+                setFile(selectedFile);
+                setWarningMessage(''); // Clear warning message
+            } else {
+                setFile(null);
+                setWarningMessage(
+                    !isValidType
+                        ? 'Invalid file type. Please upload a ZIP file.'
+                        : 'Invalid file name. Please upload an accepted file.'
+                );
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = ''; // Clear the file input value
+                }
+            }
         }
     };
 
@@ -253,6 +274,7 @@ const ConnectOverview = () => {
                         Upload File
                     </button>
                     {file && <p style={{ marginTop: '10px', fontSize: '16px' }}>Selected file: {file.name}</p>}
+                    {warningMessage && <p style={{ color: 'red', marginTop: '10px' }}>{warningMessage}</p>}
                 </div>
             )}
         </div>

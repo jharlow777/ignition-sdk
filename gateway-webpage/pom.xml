@@ -38,6 +38,18 @@
     </pluginRepositories>
 
     <repositories>
+
+        <repository>
+            <id>maven</id>
+            <url>http://repo1.maven.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+
         <repository>
             <id>releases</id>
             <url>https://nexus.inductiveautomation.com/repository/inductiveautomation-releases</url>
