@@ -13,13 +13,13 @@ const ConnectOverview = () => {
 
     // Accepted file names and types
     const acceptedFileNames = ['TrackAndTrace.zip', 'Quality.zip', 'DocumentManager.zip'];
-    const acceptedFileType = 'application/zip';
+    const acceptedFileTypes = ['application/zip', 'application/x-zip-compressed'];
 
     // Handle file selection
     const handleFileChange = (event) => {
         const selectedFile = event.target.files[0];
         if (selectedFile) {
-            const isValidType = selectedFile.type === acceptedFileType;
+            const isValidType = acceptedFileTypes.includes(selectedFile.type);
             const isValidName = acceptedFileNames.includes(selectedFile.name);
 
             if (isValidType && isValidName) {
