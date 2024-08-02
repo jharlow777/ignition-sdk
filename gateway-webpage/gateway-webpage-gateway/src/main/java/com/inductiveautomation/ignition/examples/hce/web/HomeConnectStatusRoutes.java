@@ -378,8 +378,7 @@ public class HomeConnectStatusRoutes {
         final String METHOD_NAME = "gitPull()::";
         boolean success = false;
         String repoUrl = "https://github.com/your/repo.git";
-        String branchName = "main";
-        String filePathInRepo = "path/to/your/file.txt";
+        String filePathInRepo = "path/to/your/" + feature + ".zip";
         String localRepoDir = "path/to/local/repo";
         String resourcesDir = "path/to/resources/dir";
 
@@ -401,7 +400,7 @@ public class HomeConnectStatusRoutes {
 
             // Get the latest version of the file from the repository
             File fileInRepo = new File(repoDir, filePathInRepo);
-            File targetFile = new File(resourcesDir, "file.txt");
+            File targetFile = new File(resourcesDir, feature + ".zip");
 
             if (!fileInRepo.exists()) {
                 throw new IOException("File does not exist in the repository.");

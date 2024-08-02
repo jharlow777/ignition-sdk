@@ -1,6 +1,5 @@
 package com.inductiveautomation.ignition.examples.hce;
 
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -10,11 +9,8 @@ import com.inductiveautomation.ignition.common.BundleUtil;
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
 import com.inductiveautomation.ignition.common.util.LogUtil;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
-import com.inductiveautomation.ignition.examples.hce.records.HCSettingsRecord;
-import com.inductiveautomation.ignition.examples.hce.web.HCSettingsPage;
 import com.inductiveautomation.ignition.examples.hce.web.HomeConnectStatusRoutes;
 import com.inductiveautomation.ignition.gateway.dataroutes.RouteGroup;
-import com.inductiveautomation.ignition.gateway.localdb.persistence.IRecordListener;
 import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.ignition.gateway.web.components.AbstractNamedTab;
@@ -22,14 +18,10 @@ import com.inductiveautomation.ignition.gateway.web.components.ConfigPanel;
 import com.inductiveautomation.ignition.gateway.web.models.ConfigCategory;
 import com.inductiveautomation.ignition.gateway.web.models.IConfigTab;
 import com.inductiveautomation.ignition.gateway.web.models.INamedTab;
-import com.inductiveautomation.ignition.gateway.web.models.KeyValue;
 import com.inductiveautomation.ignition.gateway.web.pages.BasicReactPanel;
 import com.inductiveautomation.ignition.gateway.web.pages.status.StatusCategories;
 import com.inductiveautomation.ignition.gateway.web.models.DefaultConfigTab;
 import org.apache.wicket.markup.html.WebMarkupContainer;
-import com.inductiveautomation.ignition.gateway.web.pages.IConfigPage;
-import com.inductiveautomation.ignition.gateway.web.components.ConfigPanel;
-import com.inductiveautomation.ignition.gateway.web.components.react.ReactComponent;
 import com.inductiveautomation.ignition.gateway.web.models.LenientResourceModel;
 import org.apache.wicket.model.IModel;
 
