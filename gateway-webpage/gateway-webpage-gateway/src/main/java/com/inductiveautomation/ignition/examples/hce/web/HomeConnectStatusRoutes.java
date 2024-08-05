@@ -10,7 +10,6 @@ import com.inductiveautomation.ignition.gateway.project.ProjectManager;
 import com.inductiveautomation.ignition.gateway.datasource.SRConnection;
 import com.inductiveautomation.ignition.gateway.datasource.DatasourceManager;
 import com.inductiveautomation.ignition.common.Dataset;
-import com.inductiveautomation.ignition.gateway.datasource.Datasource;
 import com.inductiveautomation.ignition.gateway.dataroutes.HttpMethod;
 
 import org.json.JSONArray;
@@ -33,16 +32,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Arrays;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 public class HomeConnectStatusRoutes {
 
@@ -102,7 +97,7 @@ public class HomeConnectStatusRoutes {
         }
     }
 
-    // FOR TESTING: Reset all modules' install status
+    // FOR TESTING: Resets all modules' install status
     private JSONObject resetInstallStatus(RequestContext requestContext) throws SQLException {
         final String METHOD_NAME = "resetInstallStatus()::";
         SRConnection conn = null;
@@ -119,6 +114,7 @@ public class HomeConnectStatusRoutes {
         return null;
     }
 
+    // Queries the modules table and returns a JSONArray of each feature name and its active/install statuses
     private JSONObject retrieveFeatureStatus(RequestContext requestContext, HttpServletResponse httpServletResponse) throws SQLException, JSONException{
         final String METHOD_NAME = "retrieveFeatureStatus()::";
         JSONObject json = new JSONObject();
@@ -158,6 +154,7 @@ public class HomeConnectStatusRoutes {
         return json;
     }
 
+    // Installs a feature(s) from the project resource's zip files
     private JSONObject install(RequestContext requestContext, HttpServletResponse httpServletResponse, String params) throws SQLException, JSONException {
         final String METHOD_NAME = "install()::";
         GatewayContext context = requestContext.getGatewayContext();
@@ -231,6 +228,7 @@ public class HomeConnectStatusRoutes {
         return json;
     }
 
+    // Installs a feature from an uploaded file's InputStream
     private JSONObject installFile(RequestContext requestContext, HttpServletResponse httpServletResponse, InputStream fileStream, String fileName) throws SQLException, IOException, JSONException {
         final String METHOD_NAME = "installFile()::";
         GatewayContext context = requestContext.getGatewayContext();
@@ -394,6 +392,7 @@ public class HomeConnectStatusRoutes {
         return success;
     }
 
+    // Pulls the latest version of the feature's zip file from the Elev8 git repo
     private boolean gitPull(String feature) {
         final String METHOD_NAME = "gitPull()::";
         boolean success = false;
