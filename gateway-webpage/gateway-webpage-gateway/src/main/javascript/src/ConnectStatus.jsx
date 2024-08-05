@@ -9,10 +9,11 @@ const ConnectOverview = () => {
     const [file, setFile] = useState(null);
     const [activeTab, setActiveTab] = useState('dropdown');
     const [warningMessage, setWarningMessage] = useState('');
+    const [featureStatus, setFeatureStatus] = useState([]); // Track feature statuses
     const fileInputRef = useRef(null); // Ref for the file input element
 
     // Accepted file names and types
-    const acceptedFileNames = ['TrackAndTrace.zip', 'Quality.zip', 'DocumentManager.zip'];
+    const [acceptedFileNames, setAcceptedFileNames] = useState([]);
     const acceptedFileTypes = ['application/zip', 'application/x-zip-compressed'];
 
     // Handle file selection
@@ -80,9 +81,9 @@ const ConnectOverview = () => {
         }
     }, [file]); // Dependency on file
 
-    // Function to fetch options
-    const fetchOptions = () => {
-        fetch(`/data/hce/activeFeatures`, {
+    // Fetch feature status from server
+    const fetchFeatureStatus = () => {
+        fetch(`/data/hce/featureStatus`, {
             method: 'GET',
             credentials: 'same-origin',
             headers: {
@@ -91,29 +92,61 @@ const ConnectOverview = () => {
         })
         .then(response => response.json())
         .then(json => {
-            if (json.availableFeatures) {
-                const formattedOptions = json.availableFeatures.map(name => ({
-                    value: name,
-                    label: name
-                }));
+            if (json.features) {
+                setFeatureStatus(json.features);
 
-                setOptions(formattedOptions);
-
-                setInstallDisabled(formattedOptions.length === 0);
+                 // Populate accepted file names with features
+                 setAcceptedFileNames(json.features.map(feature => feature.name + ".zip"));
             } else {
-                throw new Error("Invalid features array retrieved from config.modules");
+                console.error('Error: No feature status data found.');
             }
         })
         .catch(error => {
-            console.error('Error fetching options:', error);
+            console.error('Error fetching feature status:', error);
+        });
+    };
+
+    // Function to fetch dropdown options
+    const fetchFeatureOptions = () => {
+        fetch(`/data/hce/featureStatus`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(json => {
+            if (json.features) {
+
+                // Filter features where isActive is true and isInstalled is false
+                const formattedOptions = json
+                    .features
+                    .filter(feature => feature.activeStatus && !feature.installStatus)
+                    .map(feature => ({
+                    value: feature.name,
+                    label: feature.name
+                }));
+    
+                setOptions(formattedOptions);
+    
+                // Determine if any options are available to enable or disable the install button
+                setInstallDisabled(formattedOptions.length === 0);
+            } else {
+                console.error('Error: No features data found.');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching feature status:', error);
         });
     };
 
     useEffect(() => {
-        fetchOptions();
+        fetchFeatureOptions();
+        fetchFeatureStatus();
     }, [refreshOptions]);
 
-    const handleChange = (selectedFeatures) => {
+    const handleDropdownChange = (selectedFeatures) => {
         setFeatures(selectedFeatures || []);
         setInstallDisabled(selectedFeatures.length === 0);
     };
@@ -173,6 +206,18 @@ const ConnectOverview = () => {
 
     return (
         <div>
+            {/* Status Component */}
+            <div style={{ marginBottom: '20px' }}>
+                <h2>Feature Status</h2>
+                <ul>
+                    {featureStatus.map((feature, index) => (
+                        <li key={index} style={{ marginBottom: '10px' }}>
+                            <strong>{feature.name}</strong>: {feature.activeStatus ? 'Active' : 'Inactive'} / {feature.installStatus ? 'Installed' : 'Not Installed'}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+            {/* Tabs */}
             <div style={{ marginBottom: '20px' }}>
                 <button
                     style={{
@@ -206,13 +251,14 @@ const ConnectOverview = () => {
                     File Upload
                 </button>
             </div>
-
+            
+            {/* Dropdown */}
             {activeTab === 'dropdown' && (
                 <div>
                     <h2>Select Module</h2>
                     <Select
                         options={options}
-                        onChange={handleChange}
+                        onChange={handleDropdownChange}
                         value={features}
                         isMulti
                     />
@@ -250,6 +296,7 @@ const ConnectOverview = () => {
                 </div>
             )}
 
+            {/* File Upload */}
             {activeTab === 'upload' && (
                 <div>
                     <h2>Upload Module File</h2>

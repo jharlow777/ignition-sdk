@@ -13,6 +13,7 @@ import com.inductiveautomation.ignition.common.Dataset;
 import com.inductiveautomation.ignition.gateway.datasource.Datasource;
 import com.inductiveautomation.ignition.gateway.dataroutes.HttpMethod;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.apache.commons.io.IOUtils;
@@ -80,18 +81,18 @@ public class HomeConnectStatusRoutes {
                 .method(HttpMethod.POST)
                 .restrict(WicketAccessControl.STATUS_SECTION)
                 .mount();
-
-            routes.newRoute("/activeFeatures")
-                .handler((req, res) -> {
-                    return retrieveAvailableFeatures(req, res);
-                })
-                .type(TYPE_JSON)
-                .restrict(WicketAccessControl.STATUS_SECTION)
-                .mount();
             
             routes.newRoute("/resetFeatures")
                 .handler((req, res) -> {
                     return resetInstallStatus(req);
+                })
+                .type(TYPE_JSON)
+                .restrict(WicketAccessControl.STATUS_SECTION)
+                .mount();
+
+            routes.newRoute("/featureStatus")
+                .handler((req, res) -> {
+                    return retrieveFeatureStatus(req, res);
                 })
                 .type(TYPE_JSON)
                 .restrict(WicketAccessControl.STATUS_SECTION)
@@ -102,7 +103,7 @@ public class HomeConnectStatusRoutes {
     }
 
     // FOR TESTING: Reset all modules' install status
-    public JSONObject resetInstallStatus(RequestContext requestContext) throws SQLException {
+    private JSONObject resetInstallStatus(RequestContext requestContext) throws SQLException {
         final String METHOD_NAME = "resetInstallStatus()::";
         SRConnection conn = null;
         try {
@@ -118,18 +119,37 @@ public class HomeConnectStatusRoutes {
         return null;
     }
 
-    public JSONObject retrieveAvailableFeatures(RequestContext requestContext, HttpServletResponse httpServletResponse) throws SQLException, JSONException {
-        final String METHOD_NAME = "retrieveAvailableFeatures()::";
+    private JSONObject retrieveFeatureStatus(RequestContext requestContext, HttpServletResponse httpServletResponse) throws SQLException, JSONException{
+        final String METHOD_NAME = "retrieveFeatureStatus()::";
         JSONObject json = new JSONObject();
+        JSONArray featureArray = new JSONArray();
         SRConnection conn = null;
+
         try {
             GatewayContext context = requestContext.getGatewayContext();
             DatasourceManager datasourceManager = context.getDatasourceManager();
             conn = datasourceManager.getConnection("MSSQL_MES");
 
-            Dataset result = conn.runQuery("SELECT name FROM config.modules WHERE isActive = 1 AND isInstalled = 0");
-            List<Object> features = result.getColumnAsList(0);
-            json.put("availableFeatures", features);
+            Dataset result = conn.runQuery("SELECT name, isActive, isInstalled FROM config.modules");
+
+            // Iterate over the result set
+            for (int i = 0; i < result.getRowCount(); i++) {
+                String name = result.getColumnType(0) == String.class ? String.valueOf(result.getValueAt(i, "name")) : "Name is not a valid string";
+                boolean isActive = result.getColumnType(1) == Boolean.class ? (boolean) result.getValueAt(i, "isActive") : null;
+                boolean isInstalled = result.getColumnType(2) == Boolean.class ? (boolean) result.getValueAt(i, "isInstalled") : null;
+
+                // Create JSON object for the feature
+                JSONObject feature = new JSONObject();
+                feature.put("name", name);
+                feature.put("activeStatus", isActive);
+                feature.put("installStatus", isInstalled);
+
+                // Add the feature JSON object to the array
+                featureArray.put(feature);
+            }
+
+            // Add the array of features to the response JSON
+            json.put("features", featureArray);
         } catch(SQLException e) {
             log.error(METHOD_NAME + "SQLException " + e.getMessage());
         } finally {
@@ -138,7 +158,7 @@ public class HomeConnectStatusRoutes {
         return json;
     }
 
-    public JSONObject install(RequestContext requestContext, HttpServletResponse httpServletResponse, String params) throws SQLException, JSONException {
+    private JSONObject install(RequestContext requestContext, HttpServletResponse httpServletResponse, String params) throws SQLException, JSONException {
         final String METHOD_NAME = "install()::";
         GatewayContext context = requestContext.getGatewayContext();
         JSONObject json = new JSONObject();
@@ -211,7 +231,7 @@ public class HomeConnectStatusRoutes {
         return json;
     }
 
-    public JSONObject installFile(RequestContext requestContext, HttpServletResponse httpServletResponse, InputStream fileStream, String fileName) throws SQLException, IOException, JSONException {
+    private JSONObject installFile(RequestContext requestContext, HttpServletResponse httpServletResponse, InputStream fileStream, String fileName) throws SQLException, IOException, JSONException {
         final String METHOD_NAME = "installFile()::";
         GatewayContext context = requestContext.getGatewayContext();
         JSONObject json = new JSONObject();
