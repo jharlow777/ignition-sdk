@@ -4,6 +4,6 @@ import org.apache.wicket.request.resource.JavaScriptResourceReference;
 
 public class CustomJavaScriptReference extends JavaScriptResourceReference {
     public CustomJavaScriptReference() {
-        super(CustomJavaScriptReference.class, "/res/hce/js/homeconnectstatus.js");
+        super(CustomJavaScriptReference.class, "../../../../../mounted/js/homeconnectstatus.js");
     }
 }
