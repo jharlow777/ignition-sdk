@@ -2,10 +2,7 @@ package com.inductiveautomation.ignition.examples.hce;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.wicket.Component;
-import org.apache.wicket.markup.head.IHeaderResponse;
-import org.apache.wicket.markup.head.JavaScriptHeaderItem;
-import org.apache.wicket.markup.html.WebMarkupContainer;
-import org.apache.wicket.request.resource.JavaScriptResourceReference;
+import org.apache.wicket.markup.html.form.Form;
 
 import com.inductiveautomation.ignition.common.util.LogUtil;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
@@ -30,37 +27,29 @@ public class Elev8ConfigPanel extends ConfigPanel{
         initComponents();
     }
 
-    public Elev8ConfigPanel(String titleKey, IConfigPage configPage, ConfigPanel returnPanel) {
-        super(titleKey, configPage, returnPanel);
-        initComponents();
-    }
-
     public Elev8ConfigPanel(String titleKey, String defaultTitle, IConfigPage configPage, ConfigPanel returnPanel) {
         super(titleKey, defaultTitle, configPage, returnPanel);
         initComponents();
     }
 
     private void initComponents() {
-        WebMarkupContainer reactContainer = new WebMarkupContainer("reactContainer");
-        reactContainer.setOutputMarkupId(true);
-        // JavaScriptResourceReference reactJs = new JavaScriptResourceReference(Elev8ConfigPanel.class, "../../../../../mounted/js/homeconnectstatus.js");
-        // reactContainer.add(new Component[]{new ReactComponent("react", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus")});
+        Form form = new Form("form");
+        form.add(new Component[]{new ReactComponent("react", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus")});
+        // this.add(new ReactComponent("react", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus"));
+        // form.add(new BasicReactPanel("panel-id", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus"));
+        this.add(new Component[]{form});
 
-        add(reactContainer);
-
-    }
-
-    @Override
-    public void renderHead(IHeaderResponse response) {
-        super.renderHead(response);
-        // Add your JavaScript file to the head
-        log.info("Rendering react");
-        JavaScriptResourceReference reactJs = new JavaScriptResourceReference(Elev8ConfigPanel.class, "../../../../../mounted/js/homeconnectstatus.js");
-        response.render(JavaScriptHeaderItem.forReference(reactJs));
+        // WebMarkupContainer reactContainer = new WebMarkupContainer("reactContainer");
+        // reactContainer.setOutputMarkupId(true);
+        // // reactContainer.add(new Component[]{new ReactComponent("react", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus")});
+        // reactContainer.add(new BasicReactPanel("1", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus"));
+        // add(reactContainer);
+        // String text = reactContainer.getMarkup().toString(true);
+        // log.info("Elev8ConfigPanel()::initComponents()::added BasicReactPanel: " + text);
     }
 
     public Elev8ConfigPanel(IConfigPage configPage) {
-        super("HomeConnect.nav.settings.title", "Install", configPage, null);
+        super("HomeConnect.nav.settings.title", "install", configPage, null);
         log.info("Elev8ConfigPanel()::Initializing with basic configPage constructor");
         this.initComponents();
     }

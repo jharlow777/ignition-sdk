@@ -19,6 +19,7 @@ import com.inductiveautomation.ignition.gateway.web.models.ConfigCategory;
 import com.inductiveautomation.ignition.gateway.web.models.IConfigTab;
 import com.inductiveautomation.ignition.gateway.web.models.INamedTab;
 import com.inductiveautomation.ignition.gateway.web.pages.BasicReactPanel;
+import com.inductiveautomation.ignition.gateway.web.pages.IConfigPage;
 import com.inductiveautomation.ignition.gateway.web.pages.status.StatusCategories;
 import com.inductiveautomation.ignition.gateway.web.models.DefaultConfigTab;
 import org.apache.wicket.markup.html.WebMarkupContainer;
@@ -75,43 +76,43 @@ public class GatewayHook extends AbstractGatewayModuleHook {
      * lines up with HCSettingsPage#getMenuLocation().getRight()
      */
 
-    public static final IConfigTab HCE_CONFIG_ENTRY = DefaultConfigTab.builder()
-        .category(CONFIG_CATEGORY)
-        .name("elev8install")
-        .i18n("HomeConnect.nav.settings.title")
-        .page(Elev8ConfigPanel.class)
-        .terms("elev8 install")
-        .build();
+    // public static final IConfigTab HCE_CONFIG_ENTRY = DefaultConfigTab.builder()
+    //     .category(CONFIG_CATEGORY)
+    //     .name("elev8install")
+    //     .i18n("HomeConnect.nav.settings.title")
+    //     .page(Elev8ConfigPanel.class)
+    //     .terms("elev8 install")
+    //     .build();
 
-    // private static final IConfigTab HCE_CONFIG_ENTRY = new Elev8ConfigTab(
-    //         "HomeConnect",
-    //         "homeconnect",
-    //         "HomeConnect.nav.status.header"
-    // )
-    // {
-    //     @Override
-    //     public ConfigPanel getPanel(IConfigPage configPage) {
-    //         log.info("GatewayHook()::Elev8ConfigTab.getPanel(configPage)");
-    //         return new Elev8ConfigPanel("HomeConnect.nav.settings.title", "Install", configPage, null, "id", "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
-    //     }
+    private static final IConfigTab HCE_CONFIG_ENTRY = new Elev8ConfigTab(
+            "HomeConnect",
+            "elev8install",
+            "HomeConnect.nav.settings.title"
+    )
+    {
+        @Override
+        public ConfigPanel getPanel(IConfigPage configPage) {
+            log.info("GatewayHook()::Elev8ConfigTab.getPanel(configPage)");
+            return new Elev8ConfigPanel("HomeConnect.nav.settings.title", "Install", configPage, null);
+        }
 
-    //     // Deprecated in IConfigTab
-    //     @Override
-    //     public WebMarkupContainer getPanel(String panelId) {
-    //         log.info("GatewayHook()::Elev8ConfigTab.getPanel(panelId):" + panelId);
-    //         return new BasicReactPanel(panelId, "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
-    //     }
+        // Deprecated in IConfigTab
+        @Override
+        public WebMarkupContainer getPanel(String panelId) {
+            log.info("GatewayHook()::Elev8ConfigTab.getPanel(panelId):" + panelId);
+            return new BasicReactPanel(panelId, "/res/hce/js/homeconnectstatus.js", "homeconnectstatus");
+        }
 
-    //     @Override
-    //     public Iterable<String> getSearchTerms(){
-    //         return Arrays.asList("home connect", "hce");
-    //     }
+        @Override
+        public Iterable<String> getSearchTerms(){
+            return Arrays.asList("home connect", "hce");
+        }
 
-    //     @Override
-    //     public IModel<String> getTitle(){
-    //         return new LenientResourceModel("HomeConnect.nav.status.header", "Elev8 Install");
-    //     }
-    // };
+        @Override
+        public IModel<String> getTitle(){
+            return new LenientResourceModel("HomeConnect.nav.status.header", "Elev8 Install");
+        }
+    };
 
     @Override
     public List<? extends IConfigTab> getConfigPanels() {
@@ -156,38 +157,6 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
         log.debug("GatewayHook Setup Complete.");
     }
-
-    // private void verifySchema(GatewayContext context) {
-    //     try {
-    //         context.getSchemaUpdater().updatePersistentRecords(HCSettingsRecord.META);
-    //     } catch (SQLException e) {
-    //         log.error("Error verifying persistent record schemas for HomeConnect records.", e);
-    //     }
-    // }
-
-    // public void maybeCreateHCSettings(GatewayContext context) {
-    //     log.trace("Attempting to create HomeConnect Settings Record");
-    //     try {
-    //         HCSettingsRecord settingsRecord = context.getLocalPersistenceInterface().createNew(HCSettingsRecord.META);
-    //         settingsRecord.setId(0L);
-    //         settingsRecord.setHCIPAddress("192.168.1.99");
-    //         settingsRecord.setHCHubName("HomeConnect Hub");
-    //         settingsRecord.setHCPowerOutput(23);
-    //         settingsRecord.setHCDeviceCount(15);
-    //         settingsRecord.setBroadcastSSID(false);
-
-    //         /*
-	// 		 * This doesn't override existing settings, only replaces it with these if we didn't
-	// 		 * exist already.
-	// 		 */
-    //         context.getSchemaUpdater().ensureRecordExists(settingsRecord);
-    //     } catch (Exception e) {
-    //         log.error("Failed to establish HCSettings Record exists", e);
-    //     }
-
-    //     log.trace("HomeConnect Settings Record Established");
-    // }
-
 
     @Override
     public void startup(LicenseState licenseState) {
